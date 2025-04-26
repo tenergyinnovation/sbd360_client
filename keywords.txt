@@ -1,4 +1,4 @@
-SBD360Client    # Class name for the main library
+tenergy32hub    # Class name for the main library
 begin           # Method to initialize the library
 update          # Method to update the library state
 getSensorData   # Method to retrieve sensor data

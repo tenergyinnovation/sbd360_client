@@ -1,6 +1,6 @@
-# sbd360_client Library
+# tenergy32hub Library
 
-The `sbd360_client` library is designed for the ESP32-DOIT-DEVKIT-V1 board, providing an interface to interact with various components such as OLED displays, LoRa modules, relays, and sensors. This library simplifies the process of integrating these components into your projects.
+The `tenergy32hub` library is designed for the ESP32-DOIT-DEVKIT-V1 board, providing an interface to interact with various components such as OLED displays, LoRa modules, relays, and sensors. This library simplifies the process of integrating these components into your projects.
 
 ## Features
 
@@ -12,15 +12,15 @@ The `sbd360_client` library is designed for the ESP32-DOIT-DEVKIT-V1 board, prov
 
 ## Installation
 
-1. Download the `sbd360_client` library from the repository.
-2. Place the `sbd360_client` folder in your Arduino libraries directory (usually found in `Documents/Arduino/libraries`).
+1. Download the `tenergy32hub` library from the repository.
+2. Place the `tenergy32hub` folder in your Arduino libraries directory (usually found in `Documents/Arduino/libraries`).
 3. Restart the Arduino IDE to recognize the new library.
 
 ## Usage
 
 ### Basic Example
 
-To get started with the `sbd360_client` library, you can use the basic example provided in the `examples/basic_usage` folder. This example demonstrates how to initialize the library and interact with the components.
+To get started with the `tenergy32hub` library, you can use the basic example provided in the `examples/basic_usage` folder. This example demonstrates how to initialize the library and interact with the components.
 
 ### Advanced Example
 
