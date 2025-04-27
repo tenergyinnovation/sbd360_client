@@ -1,0 +1,468 @@
+// File: tenergy32hub.cpp
+#include "tenergy32hub.h"
+
+Tenergy32Hub::Tenergy32Hub() : _oled(nullptr), _lcd(nullptr), _ads(nullptr) {}
+
+/***********************************************************************
+ * FUNCTION:    begin
+ * DESCRIPTION: Initializes the Tenergy32Hub hardware.
+ *              Sets up pin modes, initializes LoRa, I2C, and other
+ *              peripherals.
+ * PARAMETERS:  loraFreq - Frequency for LoRa communication (default is 433E6).
+ * RETURNED:    true if initialization is successful, false otherwise.
+ ***********************************************************************/
+bool Tenergy32Hub::begin(uint32_t loraFreq)
+{
+    // Initialize serial communication
+    Serial.begin(115200);
+    Serial.println("Initializing Tenergy32Hub...");
+
+    // Set up initial pin modes
+    Serial.println("Setting pin modes...");
+    pinMode(PIN_BUZZER, OUTPUT);
+    digitalWrite(PIN_BUZZER, LOW);
+    pinMode(PIN_CHARGER_RESET, OUTPUT);
+    digitalWrite(PIN_CHARGER_RESET, HIGH);
+
+     // Step 1: Initialize I2C
+     Serial.println("Initializing I2C...");
+     initI2C();
+ 
+     // Step 3: Initialize OLED display
+     Serial.println("Initializing OLED...");
+     _oled = new Adafruit_SSD1306(128, 32, &Wire);
+     if (!_oled->begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS))
+     {
+         Serial.println("fail to initial OLED");
+         return false;
+     }
+     _oled->clearDisplay();
+     if (_oled)
+     {
+         _oled->setCursor(0, 0);
+         _oled->println("OLED Init OK");
+         _oled->display();
+         vTaskDelay(1000); // Delay to show the message
+     }
+
+    // Step 2: Initialize LoRa
+    Serial.println("Initializing LoRa...");
+    // Display progress on OLED if available
+    if (_oled)
+    {
+        _oled->clearDisplay();
+        _oled->setTextSize(1);
+        _oled->setTextColor(SSD1306_WHITE);
+        _oled->setCursor(0, 0);
+        _oled->println("Init LoRa...");
+        _oled->display();
+        vTaskDelay(1000); // Delay to show the message
+    }
+    SPI.begin(PIN_LORA_SCK, PIN_LORA_MISO, PIN_LORA_MOSI);
+    LoRa.setPins(PIN_LORA_NSS, PIN_LORA_RESET, PIN_LORA_DIO0);
+    if (!LoRa.begin(loraFreq))
+    {
+        Serial.println("fail to initial LoRa");
+        if (_oled)
+        {
+            _oled->clearDisplay();
+            _oled->setCursor(0, 0);
+            _oled->println("LoRa Init Fail");
+            _oled->display();
+            vTaskDelay(1000);
+        }
+        return false;
+    }
+
+   
+
+    // Step 3: Set up remaining peripheral pin modes
+    Serial.println("Setting peripheral pin modes...");
+    if (_oled)
+    {
+        _oled->clearDisplay();
+        _oled->setCursor(0, 0);
+        _oled->println("Setting peripherals...");
+        _oled->display();
+        vTaskDelay(1000); // Delay to show the message
+    }
+    pinMode(PIN_SLIDE_SWITCH, INPUT);
+    pinMode(PIN_SW1, INPUT_PULLUP);
+    pinMode(PIN_SW2, INPUT_PULLUP);
+    pinMode(PIN_MOTION_SENSOR, INPUT);
+    pinMode(PIN_WATER_LEAK, INPUT);
+    pinMode(PIN_RELAY, OUTPUT);
+    pinMode(PIN_LED_BLUE, OUTPUT);
+    pinMode(PIN_LED_RED, OUTPUT);
+    pinMode(PIN_BUZZER, OUTPUT);
+    pinMode(PIN_CHARGER_RESET, OUTPUT);
+
+    // Optional: Reinitialize LoRa to ensure settings are correct
+    SPI.begin(PIN_LORA_SCK, PIN_LORA_MISO, PIN_LORA_MOSI);
+    LoRa.setPins(PIN_LORA_NSS, PIN_LORA_RESET, PIN_LORA_DIO0);
+    if (!LoRa.begin(loraFreq))
+    {
+        Serial.println("fail to initial LoRa");
+        if (_oled)
+        {
+            _oled->clearDisplay();
+            _oled->setCursor(0, 0);
+            _oled->println("LoRa Init Fail");
+            _oled->display();
+            vTaskDelay(1000);
+        }
+        return false;
+    }
+    else
+    {
+        Serial.println("LoRa initialized successfully.");
+        if (_oled)
+        {
+            _oled->clearDisplay();
+            _oled->setCursor(0, 0);
+            _oled->println("LoRa OK");
+            _oled->display();
+            vTaskDelay(1000); // Delay to show the message
+        }
+    }
+
+    // Final status messages
+    Serial.println("I2C initialized successfully.");
+    Serial.println("LoRa initialized successfully.");
+    Serial.println("Tenergy32Hub initialized successfully.");
+    if (_oled)
+    {
+        _oled->clearDisplay();
+        _oled->setCursor(0, 0);
+        _oled->println("Initialization");
+        _oled->setCursor(0, 10);
+        _oled->println("Complete");
+        _oled->display();
+        vTaskDelay(1000);
+    }
+
+    beep(2, 100); // Beep twice to indicate successful initialization
+    return true;
+}
+
+/***********************************************************************
+ * FUNCTION:    readSlideSwitch
+ * DESCRIPTION: Reads the state of the slide switch.
+ * PARAMETERS:  none
+ * RETURNED:    true if the switch is on, false otherwise.
+ ***********************************************************************/
+bool Tenergy32Hub::readSlideSwitch() { return digitalRead(PIN_SLIDE_SWITCH) == HIGH; }
+
+/***********************************************************************
+ * FUNCTION:    readSW1
+ * DESCRIPTION: Reads the state of switch SW1.
+ * PARAMETERS:  none
+ * RETURNED:    true if the switch is pressed, false otherwise.
+ ***********************************************************************/
+bool Tenergy32Hub::readSW1() { return digitalRead(PIN_SW1) == LOW; }
+
+/***********************************************************************
+ * FUNCTION:    readSW2
+ * DESCRIPTION: Reads the state of switch SW2.
+ * PARAMETERS:  none
+ * RETURNED:    true if the switch is pressed, false otherwise.
+ ***********************************************************************/
+bool Tenergy32Hub::readSW2() { return digitalRead(PIN_SW2) == LOW; }
+
+/***********************************************************************
+ * FUNCTION:    readMotionSensor
+ * DESCRIPTION: Reads the state of the motion sensor.
+ * PARAMETERS:  none
+ * RETURNED:    1 if motion is detected, 0 otherwise.
+ ***********************************************************************/
+int Tenergy32Hub::readMotionSensor() { return digitalRead(PIN_MOTION_SENSOR); }
+
+/***********************************************************************
+ * FUNCTION:    readWaterLeak
+ * DESCRIPTION: Reads the state of the water leak sensor.
+ * PARAMETERS:  none
+ * RETURNED:    1 if water is detected, 0 otherwise.
+ ***********************************************************************/
+int Tenergy32Hub::readWaterLeak() { return digitalRead(PIN_WATER_LEAK); }
+
+/***********************************************************************
+ * FUNCTION:    relayOn
+ * DESCRIPTION: Turns the relay on.
+ * PARAMETERS:  none
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::relayOn() { digitalWrite(PIN_RELAY, HIGH); }
+
+/***********************************************************************
+ * FUNCTION:    relayOff
+ * DESCRIPTION: Turns the relay off.
+ * PARAMETERS:  none
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::relayOff() { digitalWrite(PIN_RELAY, LOW); }
+
+/***********************************************************************
+ * FUNCTION:    setBlueLED
+ * DESCRIPTION: Controls the state of the blue LED.
+ * PARAMETERS:  on - true to turn on, false to turn off.
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::setBlueLED(bool on) { digitalWrite(PIN_LED_BLUE, on ? HIGH : LOW); }
+
+/***********************************************************************
+ * FUNCTION:    setRedLED
+ * DESCRIPTION: Controls the state of the red LED.
+ * PARAMETERS:  on - true to turn on, false to turn off.
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::setRedLED(bool on) { digitalWrite(PIN_LED_RED, on ? HIGH : LOW); }
+
+/***********************************************************************
+ * FUNCTION:    beep
+ * DESCRIPTION: Activates the buzzer for a specified duration.
+ * PARAMETERS:  ms - duration in milliseconds.
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::beep(uint8_t times, uint16_t ms)
+{
+    const uint8_t channel = 0;         // LEDC channel to use
+    const uint32_t frequency = 2048;     // Frequency in Hz matching the buzzer's resonant frequency
+    const uint8_t resolution = 8;        // LEDC resolution
+
+    // Initialize LEDC channel for the buzzer
+    ledcSetup(channel, frequency, resolution);
+    ledcAttachPin(PIN_BUZZER, channel);
+
+    for (uint8_t i = 0; i < times; i++)
+    {
+        // Start the tone
+        ledcWriteTone(channel, frequency);
+        delay(ms);            // Wait for the specified duration
+        // Stop the tone
+        ledcWriteTone(channel, 0);
+        delay(50);            // Brief pause between beeps
+    }
+}
+
+/***********************************************************************
+ * FUNCTION:    resetCharger
+ * DESCRIPTION: Resets the charger by toggling the reset pin.
+ * PARAMETERS:  none
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::resetCharger()
+{
+    digitalWrite(PIN_CHARGER_RESET, LOW);
+    delay(10);
+    digitalWrite(PIN_CHARGER_RESET, HIGH);
+}
+
+/***********************************************************************
+ * FUNCTION:    sendLoRa
+ * DESCRIPTION: Sends data over LoRa communication.
+ * PARAMETERS:  data - pointer to the data to send.
+ *              len - length of the data.
+ * RETURNED:    true if the packet was sent successfully, false otherwise.
+ ***********************************************************************/
+bool Tenergy32Hub::sendLoRa(const uint8_t *data, size_t len)
+{
+    LoRa.beginPacket();
+    LoRa.write(data, len);
+    return LoRa.endPacket() == 1;
+}
+
+/***********************************************************************
+ * FUNCTION:    receiveLoRa
+ * DESCRIPTION: Receives data over LoRa communication.
+ * PARAMETERS:  buffer - pointer to the buffer to store received data.
+ *              maxLen - maximum length of the buffer.
+ *              received - reference to store the number of bytes received.
+ * RETURNED:    true if data was received, false otherwise.
+ ***********************************************************************/
+bool Tenergy32Hub::receiveLoRa(uint8_t *buffer, size_t maxLen, int &received)
+{
+    int packetSize = LoRa.parsePacket();
+    if (!packetSize)
+        return false;
+    received = LoRa.readBytes(buffer, min((int)maxLen, packetSize));
+    return true;
+}
+
+/***********************************************************************
+ * FUNCTION:    rs485TransmitMode
+ * DESCRIPTION: Sets the RS485 module to transmit mode.
+ * PARAMETERS:  en - true to enable transmit mode, false to disable.
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::rs485TransmitMode(bool en)
+{
+    // TODO: tie DE/RE pins if available
+}
+
+/***********************************************************************
+ * FUNCTION:    sendRS485
+ * DESCRIPTION: Sends data over RS485 communication.
+ * PARAMETERS:  data - pointer to the data to send.
+ *              len - length of the data.
+ * RETURNED:    number of bytes sent.
+ ***********************************************************************/
+size_t Tenergy32Hub::sendRS485(const uint8_t *data, size_t len)
+{
+    Serial2.begin(9600, SERIAL_8N1, PIN_RX_485, PIN_TX_485);
+    return Serial2.write(data, len);
+}
+
+/***********************************************************************
+ * FUNCTION:    receiveRS485
+ * DESCRIPTION: Receives data over RS485 communication.
+ * PARAMETERS:  buffer - pointer to the buffer to store received data.
+ *              maxLen - maximum length of the buffer.
+ * RETURNED:    number of bytes received.
+ ***********************************************************************/
+size_t Tenergy32Hub::receiveRS485(uint8_t *buffer, size_t maxLen)
+{
+    Serial2.begin(9600, SERIAL_8N1, PIN_RX_485, PIN_TX_485);
+    return Serial2.readBytes(buffer, maxLen);
+}
+
+/***********************************************************************
+ * FUNCTION:    initI2C
+ * DESCRIPTION: Initializes the I2C communication.
+ * PARAMETERS:  none
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::initI2C()
+{
+    Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
+}
+
+/***********************************************************************
+ * FUNCTION:    initOLED
+ * DESCRIPTION: Initializes the OLED display.
+ * PARAMETERS:  addr - I2C address of the OLED display.
+ * RETURNED:    true if initialization is successful, false otherwise.
+ ***********************************************************************/
+bool Tenergy32Hub::initOLED(uint8_t addr)
+{
+    _oled = new Adafruit_SSD1306(128, 32, &Wire);
+    return _oled->begin(SSD1306_SWITCHCAPVCC, addr);
+}
+
+/***********************************************************************
+ * FUNCTION:    displayOLED
+ * DESCRIPTION: Displays text on the OLED screen.
+ * PARAMETERS:  text - pointer to the text to display.
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::displayOLED(const char *text)
+{
+    if (!_oled)
+        return;
+    _oled->clearDisplay();
+    _oled->setTextSize(1);
+    _oled->setTextColor(SSD1306_WHITE);
+    _oled->setCursor(0, 0);
+    _oled->println(text);
+    _oled->display();
+}
+
+/***********************************************************************
+ * FUNCTION:    displayOLEDInfo
+ * DESCRIPTION: Displays information on the OLED screen.
+ * PARAMETERS:  none
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::displayOLEDInfo()
+{
+    if (!_oled)
+        return;
+
+    _oled->clearDisplay();              // Clear any previous content
+    _oled->setTextSize(1);              // Set text size (adjust as needed)
+    _oled->setTextColor(SSD1306_WHITE); // Set text color
+
+    // First line
+    const char *line1 = "Tenergy Innovation";
+    int16_t x1, y1;
+    uint16_t w, h;
+    _oled->getTextBounds(line1, 0, 0, &x1, &y1, &w, &h);
+    int xpos1 = (128 - w) / 2; // Center horizontally for a 128px wide display
+    _oled->setCursor(xpos1, 0);
+    _oled->println(line1);
+
+    // Second line
+    const char *line2 = "Tenergy32Hub IoT";
+    _oled->getTextBounds(line2, 0, 0, &x1, &y1, &w, &h);
+    int xpos2 = (128 - w) / 2;
+    _oled->setCursor(xpos2, 10); // Adjust vertical position as needed
+    _oled->println(line2);
+
+    _oled->display();
+}
+
+/***********************************************************************
+ * FUNCTION:    initLCD
+ * DESCRIPTION: Initializes the LCD display.
+ * PARAMETERS:  addr - I2C address of the LCD display.
+ * RETURNED:    true if initialization is successful, false otherwise.
+ ***********************************************************************/
+bool Tenergy32Hub::initLCD(uint8_t addr)
+{
+    _lcd = new LiquidCrystal_I2C(addr, 20, 4);
+    _lcd->init();
+    _lcd->backlight();
+    return true;
+}
+
+/***********************************************************************
+ * FUNCTION:    displayLCD
+ * DESCRIPTION: Displays text on the LCD screen at a specific position.
+ * PARAMETERS:  text - pointer to the text to display.
+ *              col - column position.
+ *              row - row position.
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::displayLCD(const char *text, uint8_t col, uint8_t row)
+{
+    if (!_lcd)
+        return;
+    _lcd->setCursor(col, row);
+    _lcd->print(text);
+}
+
+/***********************************************************************
+ * FUNCTION:    initADC
+ * DESCRIPTION: Initializes the ADC module.
+ * PARAMETERS:  addr - I2C address of the ADC module.
+ * RETURNED:    true if initialization is successful, false otherwise.
+ ***********************************************************************/
+bool Tenergy32Hub::initADC(uint8_t addr)
+{
+    // _ads = new Adafruit_ADS1115(addr);
+    return _ads->begin();
+}
+
+/***********************************************************************
+ * FUNCTION:    readADCChannel
+ * DESCRIPTION: Reads a specific channel of the ADC module.
+ * PARAMETERS:  chan - channel number (0-3).
+ * RETURNED:    ADC value of the specified channel.
+ ***********************************************************************/
+int16_t Tenergy32Hub::readADCChannel(uint8_t chan)
+{
+    if (!_ads)
+        return 0;
+    switch (chan)
+    {
+    case 0:
+        return _ads->readADC_SingleEnded(0);
+    case 1:
+        return _ads->readADC_SingleEnded(1);
+    case 2:
+        return _ads->readADC_SingleEnded(2);
+    case 3:
+        return _ads->readADC_SingleEnded(3);
+    default:
+        return 0;
+    }
+}
