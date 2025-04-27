@@ -1,4 +1,18 @@
 // File: tenergy32hub.h
+/***********************************************************************
+ * Project      :     tenergy32hub
+ * Description  :     Library for Tenergy32 Hub
+ *                    This library provides functions to control various
+ *                    peripherals and sensors on the Tenergy32 Hub board.
+ * Hardware     :     tenergy32hub
+ * Author       :     Tenergy Innovation Co., Ltd.
+ * Date         :     27/04/2025
+ * Revision     :     1.0
+ * Rev1.0       :     Original
+ * website      :     http://www.tenergyinnovation.co.th
+ * Email        :     uten.boonliam@tenergyinnovation.co.th
+ * TEL          :     +66 89-140-7205
+ ***********************************************************************/
 #ifndef TENERGY32HUB_H
 #define TENERGY32HUB_H
 
@@ -9,6 +23,7 @@
 #include <Adafruit_SSD1306.h>
 #include <LiquidCrystal_I2C.h>
 #include <Adafruit_ADS1X15.h>
+#include <Ticker.h> // Include Ticker library
 
 // Pin definitions
 #define PIN_SLIDE_SWITCH 36
@@ -39,6 +54,9 @@
 
 class Tenergy32Hub
 {
+    private:
+    const String _version = "1.0";
+    
 public:
     Tenergy32Hub();
     bool begin(uint32_t loraFreq = 443E6);
@@ -53,8 +71,11 @@ public:
     // Actuators
     void relayOn();
     void relayOff();
+    void setRelay(bool state);
+    bool readRelayState();
     void setBlueLED(bool on);
     void setRedLED(bool on);
+    void setbuildingLED(bool on);
     void beep(uint8_t times, uint16_t ms = 100);
 
     // Charger reset
@@ -75,7 +96,6 @@ public:
     void displayOLED(const char *text);
     void displayOLEDInfo();
 
-
     // Displays text on up to 4 separate lines on the OLED.
     // Each parameter is optional (default empty string) and at least line1 should be provided.
     void displayOLEDLines(const char *line1, const char *line2 = "", const char *line3 = "", const char *line4 = "");
@@ -86,17 +106,41 @@ public:
     bool initADC(uint8_t address = ADS1115_ADDRESS);
     int16_t readADCChannel(uint8_t chan);
     int16_t readPotentiometer();
-    
+
     // Play Mario theme on the buzzer.
     void marioSound();
-  
-     // Play Angry Bird sound on the buzzer.
-     void angryBirdSound();
+    // Play Angry Bird sound on the buzzer.
+    void angryBirdSound();
+
+    // New: Blink functions for each LED using Ticker callbacks.
+    // intervalMillis: full blink cycle duration.
+    // If 0 is passed, blinking stops and the LED is turned off.
+    void blinkRedLED(uint32_t intervalMillis);
+    void blinkBlueLED(uint32_t intervalMillis);
+    void blinkbuildingLED(uint32_t intervalMillis);
 
 private:
     Adafruit_SSD1306 *_oled;
     LiquidCrystal_I2C *_lcd;
     Adafruit_ADS1115 *_ads;
+
+    // Private Ticker objects for asynchronous LED blinking.
+    Ticker _tickerRed;
+    Ticker _tickerBlue;
+    Ticker _tickerBuilding;
+
+    // Private state variables for LED toggling.
+    bool _redState;
+    bool _blueState;
+    bool _buildingState;
+
+    // Static pointer to allow callbacks to access this instance.
+    static Tenergy32Hub *_instance;
+
+    // Static callback functions used by Ticker (for each LED).
+    static void redLEDToggle();
+    static void blueLEDToggle();
+    static void buildingLEDToggle();
 };
 
 #endif // TENERGY32HUB_H

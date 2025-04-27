@@ -1,7 +1,20 @@
 // File: tenergy32hub.cpp
 #include "tenergy32hub.h"
+#include <Ticker.h>
 
-Tenergy32Hub::Tenergy32Hub() : _oled(nullptr), _lcd(nullptr), _ads(nullptr) {}
+// Initialize static instance pointer to NULL.
+Tenergy32Hub *Tenergy32Hub::_instance = nullptr;
+
+/***********************************************************************
+ * FUNCTION:    Tenergy32Hub
+ * DESCRIPTION: Constructor for the Tenergy32Hub class.
+ *              Initializes member variables and sets up the instance pointer.
+ ***********************************************************************/
+Tenergy32Hub::Tenergy32Hub() : _oled(nullptr), _lcd(nullptr), _ads(nullptr),
+    _redState(false), _blueState(false), _buildingState(false)
+{
+    _instance = this; // Assign the static instance pointer.
+}
 
 /***********************************************************************
  * FUNCTION:    begin
@@ -11,138 +24,6 @@ Tenergy32Hub::Tenergy32Hub() : _oled(nullptr), _lcd(nullptr), _ads(nullptr) {}
  * PARAMETERS:  loraFreq - Frequency for LoRa communication (default is 433E6).
  * RETURNED:    true if initialization is successful, false otherwise.
  ***********************************************************************/
-// bool Tenergy32Hub::begin(uint32_t loraFreq)
-// {
-//     // Initialize serial communication
-//     Serial.begin(115200);
-//     Serial.println("Initializing Tenergy32Hub...");
-
-//     // Set up initial pin modes
-//     Serial.println("Setting pin modes...");
-//     pinMode(PIN_BUZZER, OUTPUT);
-//     digitalWrite(PIN_BUZZER, LOW);
-//     pinMode(PIN_CHARGER_RESET, OUTPUT);
-//     digitalWrite(PIN_CHARGER_RESET, HIGH);
-
-//      // Step 1: Initialize I2C
-//      Serial.println("Initializing I2C...");
-//      initI2C();
- 
-//      // Step 3: Initialize OLED display
-//      Serial.println("Initializing OLED...");
-//      _oled = new Adafruit_SSD1306(128, 32, &Wire);
-//      if (!_oled->begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS))
-//      {
-//          Serial.println("fail to initial OLED");
-//          return false;
-//      }
-//      _oled->clearDisplay();
-//      if (_oled)
-//      {
-//          _oled->setCursor(0, 0);
-//          _oled->println("OLED Init OK");
-//          _oled->display();
-//          vTaskDelay(1000); // Delay to show the message
-//      }
-
-//     // Step 2: Initialize LoRa
-//     Serial.println("Initializing LoRa...");
-//     // Display progress on OLED if available
-//     if (_oled)
-//     {
-//         _oled->clearDisplay();
-//         _oled->setTextSize(1);
-//         _oled->setTextColor(SSD1306_WHITE);
-//         _oled->setCursor(0, 0);
-//         _oled->println("Init LoRa...");
-//         _oled->display();
-//         vTaskDelay(1000); // Delay to show the message
-//     }
-//     SPI.begin(PIN_LORA_SCK, PIN_LORA_MISO, PIN_LORA_MOSI);
-//     LoRa.setPins(PIN_LORA_NSS, PIN_LORA_RESET, PIN_LORA_DIO0);
-//     if (!LoRa.begin(loraFreq))
-//     {
-//         Serial.println("fail to initial LoRa");
-//         if (_oled)
-//         {
-//             _oled->clearDisplay();
-//             _oled->setCursor(0, 0);
-//             _oled->println("LoRa Init Fail");
-//             _oled->display();
-//             vTaskDelay(1000);
-//         }
-//         return false;
-//     }
-
-   
-
-//     // Step 3: Set up remaining peripheral pin modes
-//     Serial.println("Setting peripheral pin modes...");
-//     if (_oled)
-//     {
-//         _oled->clearDisplay();
-//         _oled->setCursor(0, 0);
-//         _oled->println("Setting peripherals...");
-//         _oled->display();
-//         vTaskDelay(1000); // Delay to show the message
-//     }
-//     pinMode(PIN_SLIDE_SWITCH, INPUT);
-//     pinMode(PIN_SW1, INPUT_PULLUP);
-//     pinMode(PIN_SW2, INPUT_PULLUP);
-//     pinMode(PIN_MOTION_SENSOR, INPUT);
-//     pinMode(PIN_WATER_LEAK, INPUT);
-//     pinMode(PIN_RELAY, OUTPUT);
-//     pinMode(PIN_LED_BLUE, OUTPUT);
-//     pinMode(PIN_LED_RED, OUTPUT);
-//     pinMode(PIN_BUZZER, OUTPUT);
-//     pinMode(PIN_CHARGER_RESET, OUTPUT);
-
-//     // Optional: Reinitialize LoRa to ensure settings are correct
-//     SPI.begin(PIN_LORA_SCK, PIN_LORA_MISO, PIN_LORA_MOSI);
-//     LoRa.setPins(PIN_LORA_NSS, PIN_LORA_RESET, PIN_LORA_DIO0);
-//     if (!LoRa.begin(loraFreq))
-//     {
-//         Serial.println("fail to initial LoRa");
-//         if (_oled)
-//         {
-//             _oled->clearDisplay();
-//             _oled->setCursor(0, 0);
-//             _oled->println("LoRa Init Fail");
-//             _oled->display();
-//             vTaskDelay(1000);
-//         }
-//         return false;
-//     }
-//     else
-//     {
-//         Serial.println("LoRa initialized successfully.");
-//         if (_oled)
-//         {
-//             _oled->clearDisplay();
-//             _oled->setCursor(0, 0);
-//             _oled->println("LoRa OK");
-//             _oled->display();
-//             vTaskDelay(1000); // Delay to show the message
-//         }
-//     }
-
-   
-
-//     if (_oled)
-//     {
-//         _oled->clearDisplay();
-//         _oled->setCursor(0, 0);
-//         _oled->println("Initialization");
-//         _oled->setCursor(0, 10);
-//         _oled->println("Complete");
-//         _oled->display();
-//         vTaskDelay(1000);
-//     }
-
-//     beep(2, 100); // Beep twice to indicate successful initialization
-//     return true;
-// }
-
 bool Tenergy32Hub::begin(uint32_t loraFreq)
 {
     // Initialize serial communication
@@ -155,6 +36,8 @@ bool Tenergy32Hub::begin(uint32_t loraFreq)
     digitalWrite(PIN_BUZZER, LOW);
     pinMode(PIN_CHARGER_RESET, OUTPUT);
     digitalWrite(PIN_CHARGER_RESET, HIGH);
+    pinMode(BUILTIN_LED, OUTPUT);
+    digitalWrite(BUILTIN_LED, LOW); // Turn off the built-in LED
 
     // Step 1: Initialize I2C
     Serial.println("Initializing I2C...");
@@ -360,6 +243,35 @@ void Tenergy32Hub::relayOn() { digitalWrite(PIN_RELAY, HIGH); }
  ***********************************************************************/
 void Tenergy32Hub::relayOff() { digitalWrite(PIN_RELAY, LOW); }
 
+
+
+/***********************************************************************
+ * FUNCTION:    setRelay
+ * DESCRIPTION: Turns the relay off.
+ * PARAMETERS:  none
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::setRelay(bool state)
+{
+    if (state)
+        relayOn();
+    else
+        relayOff();
+}
+
+
+/***********************************************************************
+ * FUNCTION:    readRelayState
+ * DESCRIPTION: Reads the state of the relay.
+ * PARAMETERS:  none
+ * RETURNED:    true if the relay is on, false otherwise.
+ ***********************************************************************/
+bool Tenergy32Hub::readRelayState()
+{
+    // Assumes digitalWrite(PIN_RELAY, HIGH) means "on"
+    return (digitalRead(PIN_RELAY) == HIGH);
+}
+
 /***********************************************************************
  * FUNCTION:    setBlueLED
  * DESCRIPTION: Controls the state of the blue LED.
@@ -376,6 +288,18 @@ void Tenergy32Hub::setBlueLED(bool on) { digitalWrite(PIN_LED_BLUE, on ? HIGH : 
  ***********************************************************************/
 void Tenergy32Hub::setRedLED(bool on) { digitalWrite(PIN_LED_RED, on ? HIGH : LOW); }
 
+/***********************************************************************
+ * FUNCTION:    setbuildingLED
+ * DESCRIPTION: Controls the state of the building LED.
+ * PARAMETERS:  on - true to turn on, false to turn off.
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::setbuildingLED(bool on)
+{
+    // Configure PIN2 as output (if not already done)
+    pinMode(2, OUTPUT);
+    digitalWrite(2, on ? HIGH : LOW);
+}
 /***********************************************************************
  * FUNCTION:    beep
  * DESCRIPTION: Activates the buzzer for a specified duration.
@@ -806,4 +730,96 @@ void Tenergy32Hub::angryBirdSound()
             delay(50);
         }
     }
+}
+
+/***********************************************************************
+ * FUNCTION:    blinkRedLED
+ * DESCRIPTION: Starts blinking the red LED at a specified interval.
+ * PARAMETERS:  intervalMillis - duration of the full blink cycle in milliseconds.
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::redLEDToggle() {
+    _instance->_redState = !_instance->_redState;
+    _instance->setRedLED(_instance->_redState);
+}
+
+/***********************************************************************
+ * FUNCTION:    blinkBlueLED
+ * DESCRIPTION: Starts blinking the blue LED at a specified interval.
+ * PARAMETERS:  intervalMillis - duration of the full blink cycle in milliseconds.
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::blueLEDToggle() {
+    _instance->_blueState = !_instance->_blueState;
+    _instance->setBlueLED(_instance->_blueState);
+}
+
+/***********************************************************************
+ * FUNCTION:    blinkbuildingLED
+ * DESCRIPTION: Starts blinking the building LED at a specified interval.
+ * PARAMETERS:  intervalMillis - duration of the full blink cycle in milliseconds.
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::buildingLEDToggle() {
+    _instance->_buildingState = !_instance->_buildingState;
+    _instance->setbuildingLED(_instance->_buildingState);
+}
+
+// -------------------------------------------------------------------
+// Blink functions using Ticker callbacks
+
+/***********************************************************************
+ * FUNCTION:    blinkRedLED
+ * DESCRIPTION: Starts blinking the red LED at a specified interval.
+ * PARAMETERS:  intervalMillis - duration of the full blink cycle in milliseconds.
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::blinkRedLED(uint32_t intervalMillis)
+{
+    // Detach any existing callback.
+    _tickerRed.detach();
+    if (intervalMillis == 0)
+    {
+        setRedLED(false);
+        _redState = false;
+        return;
+    }
+    // Use half period for toggling ON/OFF.
+    _tickerRed.attach_ms(intervalMillis / 2, redLEDToggle);
+}
+
+/***********************************************************************
+ * FUNCTION:    blinkBlueLED
+ * DESCRIPTION: Starts blinking the blue LED at a specified interval.
+ * PARAMETERS:  intervalMillis - duration of the full blink cycle in milliseconds.
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::blinkBlueLED(uint32_t intervalMillis)
+{
+    _tickerBlue.detach();
+    if (intervalMillis == 0)
+    {
+        setBlueLED(false);
+        _blueState = false;
+        return;
+    }
+    _tickerBlue.attach_ms(intervalMillis / 2, blueLEDToggle);
+}
+
+/***********************************************************************
+ * FUNCTION:    blinkbuildingLED
+ * DESCRIPTION: Starts blinking the building LED at a specified interval.
+ * PARAMETERS:  intervalMillis - duration of the full blink cycle in milliseconds.
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::blinkbuildingLED(uint32_t intervalMillis)
+{
+    _tickerBuilding.detach();
+    if (intervalMillis == 0)
+    {
+        setbuildingLED(false);
+        _buildingState = false;
+        return;
+    }
+    _tickerBuilding.attach_ms(intervalMillis / 2, buildingLEDToggle);
 }
