@@ -11,6 +11,138 @@ Tenergy32Hub::Tenergy32Hub() : _oled(nullptr), _lcd(nullptr), _ads(nullptr) {}
  * PARAMETERS:  loraFreq - Frequency for LoRa communication (default is 433E6).
  * RETURNED:    true if initialization is successful, false otherwise.
  ***********************************************************************/
+// bool Tenergy32Hub::begin(uint32_t loraFreq)
+// {
+//     // Initialize serial communication
+//     Serial.begin(115200);
+//     Serial.println("Initializing Tenergy32Hub...");
+
+//     // Set up initial pin modes
+//     Serial.println("Setting pin modes...");
+//     pinMode(PIN_BUZZER, OUTPUT);
+//     digitalWrite(PIN_BUZZER, LOW);
+//     pinMode(PIN_CHARGER_RESET, OUTPUT);
+//     digitalWrite(PIN_CHARGER_RESET, HIGH);
+
+//      // Step 1: Initialize I2C
+//      Serial.println("Initializing I2C...");
+//      initI2C();
+ 
+//      // Step 3: Initialize OLED display
+//      Serial.println("Initializing OLED...");
+//      _oled = new Adafruit_SSD1306(128, 32, &Wire);
+//      if (!_oled->begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS))
+//      {
+//          Serial.println("fail to initial OLED");
+//          return false;
+//      }
+//      _oled->clearDisplay();
+//      if (_oled)
+//      {
+//          _oled->setCursor(0, 0);
+//          _oled->println("OLED Init OK");
+//          _oled->display();
+//          vTaskDelay(1000); // Delay to show the message
+//      }
+
+//     // Step 2: Initialize LoRa
+//     Serial.println("Initializing LoRa...");
+//     // Display progress on OLED if available
+//     if (_oled)
+//     {
+//         _oled->clearDisplay();
+//         _oled->setTextSize(1);
+//         _oled->setTextColor(SSD1306_WHITE);
+//         _oled->setCursor(0, 0);
+//         _oled->println("Init LoRa...");
+//         _oled->display();
+//         vTaskDelay(1000); // Delay to show the message
+//     }
+//     SPI.begin(PIN_LORA_SCK, PIN_LORA_MISO, PIN_LORA_MOSI);
+//     LoRa.setPins(PIN_LORA_NSS, PIN_LORA_RESET, PIN_LORA_DIO0);
+//     if (!LoRa.begin(loraFreq))
+//     {
+//         Serial.println("fail to initial LoRa");
+//         if (_oled)
+//         {
+//             _oled->clearDisplay();
+//             _oled->setCursor(0, 0);
+//             _oled->println("LoRa Init Fail");
+//             _oled->display();
+//             vTaskDelay(1000);
+//         }
+//         return false;
+//     }
+
+   
+
+//     // Step 3: Set up remaining peripheral pin modes
+//     Serial.println("Setting peripheral pin modes...");
+//     if (_oled)
+//     {
+//         _oled->clearDisplay();
+//         _oled->setCursor(0, 0);
+//         _oled->println("Setting peripherals...");
+//         _oled->display();
+//         vTaskDelay(1000); // Delay to show the message
+//     }
+//     pinMode(PIN_SLIDE_SWITCH, INPUT);
+//     pinMode(PIN_SW1, INPUT_PULLUP);
+//     pinMode(PIN_SW2, INPUT_PULLUP);
+//     pinMode(PIN_MOTION_SENSOR, INPUT);
+//     pinMode(PIN_WATER_LEAK, INPUT);
+//     pinMode(PIN_RELAY, OUTPUT);
+//     pinMode(PIN_LED_BLUE, OUTPUT);
+//     pinMode(PIN_LED_RED, OUTPUT);
+//     pinMode(PIN_BUZZER, OUTPUT);
+//     pinMode(PIN_CHARGER_RESET, OUTPUT);
+
+//     // Optional: Reinitialize LoRa to ensure settings are correct
+//     SPI.begin(PIN_LORA_SCK, PIN_LORA_MISO, PIN_LORA_MOSI);
+//     LoRa.setPins(PIN_LORA_NSS, PIN_LORA_RESET, PIN_LORA_DIO0);
+//     if (!LoRa.begin(loraFreq))
+//     {
+//         Serial.println("fail to initial LoRa");
+//         if (_oled)
+//         {
+//             _oled->clearDisplay();
+//             _oled->setCursor(0, 0);
+//             _oled->println("LoRa Init Fail");
+//             _oled->display();
+//             vTaskDelay(1000);
+//         }
+//         return false;
+//     }
+//     else
+//     {
+//         Serial.println("LoRa initialized successfully.");
+//         if (_oled)
+//         {
+//             _oled->clearDisplay();
+//             _oled->setCursor(0, 0);
+//             _oled->println("LoRa OK");
+//             _oled->display();
+//             vTaskDelay(1000); // Delay to show the message
+//         }
+//     }
+
+   
+
+//     if (_oled)
+//     {
+//         _oled->clearDisplay();
+//         _oled->setCursor(0, 0);
+//         _oled->println("Initialization");
+//         _oled->setCursor(0, 10);
+//         _oled->println("Complete");
+//         _oled->display();
+//         vTaskDelay(1000);
+//     }
+
+//     beep(2, 100); // Beep twice to indicate successful initialization
+//     return true;
+// }
+
 bool Tenergy32Hub::begin(uint32_t loraFreq)
 {
     // Initialize serial communication
@@ -24,26 +156,26 @@ bool Tenergy32Hub::begin(uint32_t loraFreq)
     pinMode(PIN_CHARGER_RESET, OUTPUT);
     digitalWrite(PIN_CHARGER_RESET, HIGH);
 
-     // Step 1: Initialize I2C
-     Serial.println("Initializing I2C...");
-     initI2C();
+    // Step 1: Initialize I2C
+    Serial.println("Initializing I2C...");
+    initI2C();
  
-     // Step 3: Initialize OLED display
-     Serial.println("Initializing OLED...");
-     _oled = new Adafruit_SSD1306(128, 32, &Wire);
-     if (!_oled->begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS))
-     {
-         Serial.println("fail to initial OLED");
-         return false;
-     }
-     _oled->clearDisplay();
-     if (_oled)
-     {
-         _oled->setCursor(0, 0);
-         _oled->println("OLED Init OK");
-         _oled->display();
-         vTaskDelay(1000); // Delay to show the message
-     }
+    // Step 3: Initialize OLED display
+    Serial.println("Initializing OLED...");
+    _oled = new Adafruit_SSD1306(128, 32, &Wire);
+    if (!_oled->begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS))
+    {
+        Serial.println("fail to initial OLED");
+        return false;
+    }
+    _oled->clearDisplay();
+    if (_oled)
+    {
+        _oled->setCursor(0, 0);
+        _oled->println("OLED Init OK");
+        _oled->display();
+        vTaskDelay(1000); // Delay to show the message
+    }
 
     // Step 2: Initialize LoRa
     Serial.println("Initializing LoRa...");
@@ -73,8 +205,6 @@ bool Tenergy32Hub::begin(uint32_t loraFreq)
         }
         return false;
     }
-
-   
 
     // Step 3: Set up remaining peripheral pin modes
     Serial.println("Setting peripheral pin modes...");
@@ -121,6 +251,35 @@ bool Tenergy32Hub::begin(uint32_t loraFreq)
             _oled->clearDisplay();
             _oled->setCursor(0, 0);
             _oled->println("LoRa OK");
+            _oled->display();
+            vTaskDelay(1000); // Delay to show the message
+        }
+    }
+
+    // Step 4: Initialize ADS1115 ADC
+    Serial.println("Initializing ADC...");
+    bool adcInit = initADC(ADS1115_ADDRESS);
+    if (!adcInit)
+    {
+        Serial.println("fail to initialize ADS1115");
+        if (_oled)
+        {
+            _oled->clearDisplay();
+            _oled->setCursor(0, 0);
+            _oled->println("ADS Init Fail");
+            _oled->display();
+            vTaskDelay(1000);
+        }
+        return false;
+    }
+    else
+    {
+        Serial.println("ADS1115 initialized successfully.");
+        if (_oled)
+        {
+            _oled->clearDisplay();
+            _oled->setCursor(0, 0);
+            _oled->println("ADS OK");
             _oled->display();
             vTaskDelay(1000); // Delay to show the message
         }
@@ -438,7 +597,7 @@ void Tenergy32Hub::displayLCD(const char *text, uint8_t col, uint8_t row)
  ***********************************************************************/
 bool Tenergy32Hub::initADC(uint8_t addr)
 {
-    // _ads = new Adafruit_ADS1115(addr);
+    _ads = new Adafruit_ADS1115();  // Use default constructor
     return _ads->begin();
 }
 
@@ -464,5 +623,187 @@ int16_t Tenergy32Hub::readADCChannel(uint8_t chan)
         return _ads->readADC_SingleEnded(3);
     default:
         return 0;
+    }
+}
+
+/***********************************************************************
+ * FUNCTION:    readPotentiometer
+ * DESCRIPTION: Reads the analog value from the potentiometer connected
+ *              to the ADS1115 channel AIN2.
+ * PARAMETERS:  none
+ * RETURNED:    The ADC reading as a signed 16-bit integer.
+ ***********************************************************************/
+int16_t Tenergy32Hub::readPotentiometer() {
+    // Channel 2 corresponds to AIN2 on the ADS1115
+
+    return readADCChannel(2);
+}
+
+
+
+/***********************************************************************
+ * FUNCTION:    displayOLEDLines
+ * DESCRIPTION: Displays text on up to 5 separate lines on the OLED.
+ * PARAMETERS:  line1 - pointer to the first line of text.
+ *              line2 - pointer to the second line of text.
+ *              line3 - pointer to the third line of text.
+ *              line4 - pointer to the fourth line of text.
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::displayOLEDLines(const char *line1, const char *line2, const char *line3, const char *line4)
+{
+    if (!_oled)
+        return;
+        
+    _oled->clearDisplay();
+    _oled->setTextSize(1);
+    _oled->setTextColor(SSD1306_WHITE);
+
+    // กำหนดความสูงของหน้าจอ (32 พิกเซล)
+    const int displayHeight = 32;
+    
+    // อาเรย์ของบรรทัดที่เป็นไปได้ 4 บรรทัด
+    const char* lines[4] = { line1, line2, line3, line4 };
+
+    // นับจำนวนบรรทัดที่มีข้อความ (non-empty)
+    int count = 0;
+    for (int i = 0; i < 4; i++) {
+        if (lines[i] && strlen(lines[i]) > 0) {
+            count++;
+        }
+    }
+    if (count == 0)
+        return;
+
+    // กำหนดค่าเริ่มต้นของความสูงบรรทัด และเพิ่มระยะห่างเพิ่มเติม
+    int baseLineHeight = 8; // ค่าเริ่มต้นสำหรับ textSize(1)
+    int extraSpacing = 8;   // เพิ่มระยะห่าง 8 พิกเซล
+    int lineHeight = baseLineHeight + extraSpacing;
+
+    // ตรวจสอบว่าจำนวนบรรทัดที่แสดงรวมกันเกินความสูงของหน้าจอหรือไม่
+    if (count * lineHeight > displayHeight) {
+        // ปรับความสูงบรรทัดให้พอดีหน้าจอ (อาจจะเล็กลง)
+        lineHeight = displayHeight / count;
+    }
+    
+    // คำนวณระยะ offset เพื่อจัดให้อยู่ตรงกลางในแนวตั้ง
+    int offset = (displayHeight - (count * lineHeight)) / 2;
+
+    // แสดงแต่ละบรรทัดที่มีข้อความ
+    int printed = 0;
+    for (int i = 0; i < 4; i++) {
+        if (lines[i] && strlen(lines[i]) > 0) {
+            _oled->setCursor(0, offset + printed * lineHeight);
+            _oled->println(lines[i]);
+            printed++;
+        }
+    }
+    
+    _oled->display();
+}
+
+
+
+/***********************************************************************
+ * FUNCTION:    marioSound
+ * DESCRIPTION: Plays a simple melody using the buzzer.
+ * PARAMETERS:  none
+ * RETURNED:    none
+ ***********************************************************************/
+// First, define note frequency constants if not defined already.
+#define NOTE_E7 2637
+#define NOTE_C7 2093
+#define NOTE_G7 3135
+#define NOTE_G6 1568
+void Tenergy32Hub::marioSound()
+{
+    // A very simplified version of the Mario theme melody:
+    // Notes array (0 indicates a rest)
+    int melody[] = { NOTE_E7, NOTE_E7, 0, NOTE_E7,
+                     0, NOTE_C7, NOTE_E7, 0,
+                     NOTE_G7, 0, 0, 0,
+                     NOTE_G6, 0, 0, 0 };
+    // Corresponding note durations (in milliseconds)
+    int noteDurations[] = { 150, 150, 150, 150,
+                            150, 150, 150, 150,
+                            150, 150, 150, 150,
+                            150, 150, 150, 150 };
+    const int numNotes = sizeof(melody) / sizeof(melody[0]);
+
+    // Use LEDC channel 0 to play the melody.
+    const uint8_t channel = 0;
+    const uint8_t resolution = 8;
+    // Setup channel; the initial frequency value will be overwritten by each note.
+    ledcSetup(channel, 2000, resolution);
+    ledcAttachPin(PIN_BUZZER, channel);
+
+    for (int i = 0; i < numNotes; i++) {
+        int noteDuration = noteDurations[i];
+        if (melody[i] == 0) {
+            // Rest note - no sound
+            ledcWriteTone(channel, 0);
+            delay(noteDuration);
+        } else {
+            // Play the note at the given frequency for noteDuration ms.
+            ledcWriteTone(channel, melody[i]);
+            delay(noteDuration);
+            // Stop the note
+            ledcWriteTone(channel, 0);
+            // Brief pause between notes
+            delay(50);
+        }
+    }
+}
+
+/***********************************************************************
+ * FUNCTION:    angryBirdSound
+ * DESCRIPTION: Plays a simple melody using the buzzer.
+ * PARAMETERS:  none
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::angryBirdSound()
+{
+    // Extended "Angry Bird" sound sequence.
+    // Frequencies for the melody (0 indicates a rest)
+    int melody[] = {
+        2200, 2100, 2000, 1900, 1800, 1700,
+        1600, 1700, 1800, 1900, 2000, 2100,
+        2200, 2200, 0,    2200,
+        2100, 2100, 0,    2100,
+        2000, 0,    2000, 2100
+    };
+
+    // Corresponding note durations in milliseconds
+    int noteDurations[] = {
+        150, 150, 150, 150, 150, 150,
+        150, 150, 150, 150, 150, 150,
+        200, 200, 100, 200,
+        150, 150, 100, 150,
+        200, 100, 200, 150
+    };
+
+    const int numNotes = sizeof(melody) / sizeof(melody[0]);
+
+    // Use LEDC channel 0 to play the sound.
+    const uint8_t channel = 0;
+    const uint8_t resolution = 8;
+    ledcSetup(channel, 2000, resolution);
+    ledcAttachPin(PIN_BUZZER, channel);
+
+    for (int i = 0; i < numNotes; i++) {
+        int duration = noteDurations[i];
+        if (melody[i] == 0) {
+            // Rest note: no sound.
+            ledcWriteTone(channel, 0);
+            delay(duration);
+        } else {
+            // Play the note.
+            ledcWriteTone(channel, melody[i]);
+            delay(duration);
+            // Turn off the note.
+            ledcWriteTone(channel, 0);
+            // Brief pause between notes.
+            delay(50);
+        }
     }
 }

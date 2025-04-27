@@ -75,11 +75,23 @@ public:
     void displayOLED(const char *text);
     void displayOLEDInfo();
 
+
+    // Displays text on up to 4 separate lines on the OLED.
+    // Each parameter is optional (default empty string) and at least line1 should be provided.
+    void displayOLEDLines(const char *line1, const char *line2 = "", const char *line3 = "", const char *line4 = "");
+
     bool initLCD(uint8_t address = LCD_ADDRESS);
     void displayLCD(const char *text, uint8_t col = 0, uint8_t row = 0);
 
     bool initADC(uint8_t address = ADS1115_ADDRESS);
     int16_t readADCChannel(uint8_t chan);
+    int16_t readPotentiometer();
+    
+    // Play Mario theme on the buzzer.
+    void marioSound();
+  
+     // Play Angry Bird sound on the buzzer.
+     void angryBirdSound();
 
 private:
     Adafruit_SSD1306 *_oled;
