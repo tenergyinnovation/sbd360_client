@@ -16,6 +16,27 @@ Tenergy32Hub::Tenergy32Hub() : _oled(nullptr), _lcd(nullptr), _ads(nullptr),
     _instance = this; // Assign the static instance pointer.
 }
 
+
+/***********************************************************************
+ * FUNCTION:    showLibraryVersion
+ * DESCRIPTION: Displays the library version on the serial monitor.
+ * PARAMETERS:  none
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::showLibraryVersion()
+{
+    Serial.print("Tenergy32Hub Library Version: ");
+    Serial.println(_version);
+    if (_oled)
+    {
+        _oled->clearDisplay();
+        _oled->setCursor(0, 0);
+        _oled->println("Tenergy32Hub Library Version:");
+        _oled->println(_version);
+        _oled->display();
+    }
+}
+
 /***********************************************************************
  * FUNCTION:    begin
  * DESCRIPTION: Initializes the Tenergy32Hub hardware.
@@ -182,6 +203,11 @@ bool Tenergy32Hub::begin(uint32_t loraFreq)
         _oled->display();
         vTaskDelay(1000);
     }
+
+    // Show library version on OLED if available    
+    showLibraryVersion(); // Show library version on serial monitor
+    vTaskDelay(1000); // Delay to show the message
+ 
 
     beep(2, 100); // Beep twice to indicate successful initialization
     return true;

@@ -10,6 +10,7 @@
  * Revision     :     1.0
  * Rev1.0       :     Original
  * Rev1.1       :     Add Example for LoRa receive test [2025-05-02]
+ * Rev1.2       :     Add showLibraryVersion() function [2025-05-03]
  * website      :     http://www.tenergyinnovation.co.th
  * Email        :     uten.boonliam@tenergyinnovation.co.th
  * TEL          :     +66 89-140-7205
@@ -56,10 +57,15 @@
 class Tenergy32Hub
 {
     private:
-    const String _version = "1.1";
+    const String _version = "1.2";
     
 public:
     Tenergy32Hub();
+
+    // Show the library version
+    void showLibraryVersion();
+
+    // Initialize the Tenergy32 Hub board
     bool begin(uint32_t loraFreq = 443E6);
 
     // Switches and sensors
