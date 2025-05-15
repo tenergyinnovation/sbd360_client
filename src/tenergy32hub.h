@@ -7,10 +7,11 @@
  * Hardware     :     tenergy32hub
  * Author       :     Tenergy Innovation Co., Ltd.
  * Date         :     27/04/2025
- * Revision     :     1.0
+ * Revision     :     1.3
  * Rev1.0       :     Original
  * Rev1.1       :     Add Example for LoRa receive test [2025-05-02]
  * Rev1.2       :     Add showLibraryVersion() function [2025-05-03]
+ * Rev1.3       :     Add clearOLED() function [2025-05-15]
  * website      :     http://www.tenergyinnovation.co.th
  * Email        :     uten.boonliam@tenergyinnovation.co.th
  * TEL          :     +66 89-140-7205
@@ -56,9 +57,9 @@
 
 class Tenergy32Hub
 {
-    private:
-    const String _version = "1.2";
-    
+public:
+    const String _version = "1.3"; // Library version
+
 public:
     Tenergy32Hub();
 
@@ -106,6 +107,11 @@ public:
     // Displays text on up to 4 separate lines on the OLED.
     // Each parameter is optional (default empty string) and at least line1 should be provided.
     void displayOLEDLines(const char *line1, const char *line2 = "", const char *line3 = "", const char *line4 = "");
+
+    // clearOLED
+    // Clears the OLED display and resets the cursor position.
+    // This function is useful for preparing the display for new content.
+    void clearOLED();
 
     bool initLCD(uint8_t address = LCD_ADDRESS);
     void displayLCD(const char *text, uint8_t col = 0, uint8_t row = 0);
