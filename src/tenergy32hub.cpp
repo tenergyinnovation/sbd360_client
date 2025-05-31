@@ -904,14 +904,13 @@ bool Tenergy32Hub::readBattery_SOC(float &batteryVoltage, float &soc)
 
     if (batteryVoltage > 4.10f)
     {
-        Serial.printf("Charging battery voltage %.2f V is above 4.10 V\r\n", batteryVoltage);
+        Serial.printf("Charging battery voltage %.2f V\r\n", batteryVoltage);
         snprintf(_line1, sizeof(_line1), "Charging batt: %.2f V", batteryVoltage);
         displayOLEDLines(_line1, "", "", "");
         return true;
     }
     else
     {
-        Serial.printf("Battery voltage %.2f V is below 4.10 V\r\n", batteryVoltage);
         Serial.printf("Voltage: %.2f V, Estimated SOC: %.2f %%\r\n", batteryVoltage, soc);
         snprintf(_line1, sizeof(_line1), "Battery: %.2f V", batteryVoltage);
         snprintf(_line2, sizeof(_line2), "Estimated SOC: %.1f%%", soc);
