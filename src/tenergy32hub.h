@@ -7,11 +7,13 @@
  * Hardware     :     tenergy32hub
  * Author       :     Tenergy Innovation Co., Ltd.
  * Date         :     27/04/2025
- * Revision     :     1.3
+ * Revision     :     1.4
  * Rev1.0       :     Original
  * Rev1.1       :     Add Example for LoRa receive test [2025-05-02]
  * Rev1.2       :     Add showLibraryVersion() function [2025-05-03]
  * Rev1.3       :     Add clearOLED() function [2025-05-15]
+ * Rev1.4       :     - Revise for begin function to show OLED messages [2025-05-31]
+ *                    - Add function battery percentage and voltage reading
  * website      :     http://www.tenergyinnovation.co.th
  * Email        :     uten.boonliam@tenergyinnovation.co.th
  * TEL          :     +66 89-140-7205
@@ -58,7 +60,7 @@
 class Tenergy32Hub
 {
 public:
-    const String _version = "1.3"; // Library version
+    const String _version = "1.4"; // Library version
 
 public:
     Tenergy32Hub();
@@ -131,6 +133,11 @@ public:
     void blinkRedLED(uint32_t intervalMillis);
     void blinkBlueLED(uint32_t intervalMillis);
     void blinkbuildingLED(uint32_t intervalMillis);
+
+    // วัดเปอร์เซนต์แบตเตอรี่ (0-100%)
+    bool readBattery_SOC(float &batteryVoltage, float &soc); // Returns battery percentage (0-100%)
+
+
 
 private:
     Adafruit_SSD1306 *_oled;
