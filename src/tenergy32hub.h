@@ -1,4 +1,3 @@
-// File: tenergy32hub.h
 /***********************************************************************
  * Project      :     tenergy32hub
  * Description  :     Library for Tenergy32 Hub
@@ -7,7 +6,7 @@
  * Hardware     :     tenergy32hub
  * Author       :     Tenergy Innovation Co., Ltd.
  * Date         :     27/04/2025
- * Revision     :     1.5
+ * Revision     :     1.6
  * Rev1.0       :     Original
  * Rev1.1       :     Add Example for LoRa receive test [2025-05-02]
  * Rev1.2       :     Add showLibraryVersion() function [2025-05-03]
@@ -15,6 +14,7 @@
  * Rev1.4       :     - Revise for begin function to show OLED messages [2025-05-31]
  *                    - Add function battery percentage and voltage reading
  * Rev1.5       :     - Add Example for tenergy32hub_readBattery [2025-05-31]
+ * Rev1.6       :     Add LCD display functions [2025-06-01]
  * website      :     http://www.tenergyinnovation.co.th
  * Email        :     uten.boonliam@tenergyinnovation.co.th
  * TEL          :     +66 89-140-7205
@@ -61,7 +61,7 @@
 class Tenergy32Hub
 {
 public:
-    const String _version = "1.5"; // Library version
+    const String _version = "1.6"; // Library version
 
 public:
     Tenergy32Hub();
@@ -116,8 +116,11 @@ public:
     // This function is useful for preparing the display for new content.
     void clearOLED();
 
-    bool initLCD(uint8_t address = LCD_ADDRESS);
+    bool initLCD(uint8_t address = LCD_ADDRESS, uint8_t cols = 16, uint8_t rows = 2); // Initializes the LCD display with specified address, columns, and rows.
     void displayLCD(const char *text, uint8_t col = 0, uint8_t row = 0);
+    void clearLCD(); // Clears the LCD display and resets the cursor position.
+    void onBacklightLCD(); // Turns on the backlight of the LCD display.
+    void offBacklightLCD(); // Turns off the backlight of the LCD display.
 
     bool initADC(uint8_t address = ADS1115_ADDRESS);
     int16_t readADCChannel(uint8_t chan);

@@ -513,9 +513,18 @@ void Tenergy32Hub::displayOLEDInfo()
  * PARAMETERS:  addr - I2C address of the LCD display.
  * RETURNED:    true if initialization is successful, false otherwise.
  ***********************************************************************/
-bool Tenergy32Hub::initLCD(uint8_t addr)
+bool Tenergy32Hub::initLCD(uint8_t addr, uint8_t cols, uint8_t rows)
 {
-    _lcd = new LiquidCrystal_I2C(addr, 20, 4);
+    Serial.println("Initializing LCD...");
+    if(_oled)
+    {
+        _oled->clearDisplay();
+        _oled->setCursor(0, 0);
+        _oled->println("Init LCD...");
+        _oled->display();
+        vTaskDelay(300); // Delay to show the message
+    }
+    _lcd = new LiquidCrystal_I2C(addr, cols, rows);
     _lcd->init();
     _lcd->backlight();
     return true;
@@ -535,6 +544,49 @@ void Tenergy32Hub::displayLCD(const char *text, uint8_t col, uint8_t row)
         return;
     _lcd->setCursor(col, row);
     _lcd->print(text);
+}
+
+/***********************************************************************
+ * FUNCTION:    clearLCD
+ * DESCRIPTION: Clears the LCD display and resets the cursor position.
+ * PARAMETERS:  none
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::clearLCD()
+{
+    if (_lcd)
+    {
+        _lcd->clear();
+        _lcd->setCursor(0, 0); // Reset cursor position to the top-left corner
+    }
+}
+
+/***********************************************************************
+ * FUNCTION:    getInstance
+ * DESCRIPTION: Returns the singleton instance of the Tenergy32Hub class.
+ * PARAMETERS:  none
+ * RETURNED:    pointer to the Tenergy32Hub instance.
+ ***********************************************************************/
+void Tenergy32Hub::onBacklightLCD()
+{
+    if (_lcd)
+    {
+        _lcd->backlight(); // Turn on the backlight
+    }
+}
+
+/***********************************************************************
+ * FUNCTION:    offBacklightLCD
+ * DESCRIPTION: Turns off the backlight of the LCD display.
+ * PARAMETERS:  none
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::offBacklightLCD()
+{
+    if (_lcd)
+    {
+        _lcd->noBacklight(); // Turn off the backlight
+    }
 }
 
 /***********************************************************************
