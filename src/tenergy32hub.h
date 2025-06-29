@@ -6,7 +6,7 @@
  * Hardware     :     tenergy32hub
  * Author       :     Tenergy Innovation Co., Ltd.
  * Date         :     27/04/2025
- * Revision     :     1.6
+ * Revision     :     1.7
  * Rev1.0       :     Original
  * Rev1.1       :     Add Example for LoRa receive test [2025-05-02]
  * Rev1.2       :     Add showLibraryVersion() function [2025-05-03]
@@ -15,6 +15,7 @@
  *                    - Add function battery percentage and voltage reading
  * Rev1.5       :     - Add Example for tenergy32hub_readBattery [2025-05-31]
  * Rev1.6       :     Add LCD display functions [2025-06-01]
+ * Rev1.7       :     Add SDM120 Modbus functions [2025-06-29]
  * website      :     http://www.tenergyinnovation.co.th
  * Email        :     uten.boonliam@tenergyinnovation.co.th
  * TEL          :     +66 89-140-7205
@@ -30,6 +31,7 @@
 #include <LiquidCrystal_I2C.h>
 #include <Adafruit_ADS1X15.h>
 #include <Ticker.h> // Include Ticker library
+#include <HardwareSerial.h>
 
 // Pin definitions
 #define PIN_SLIDE_SWITCH 36
@@ -58,10 +60,19 @@
 #define LCD_ADDRESS 0x27
 #define ADS1115_ADDRESS 0x48
 
+// --- SDM120 Modbus Register Address ---
+#define SDM120_REG_VOLTAGE        0x0000
+#define SDM120_REG_CURRENT        0x0006
+#define SDM120_REG_ACTIVE_POWER   0x000C
+#define SDM120_REG_APP_POWER      0x0012
+#define SDM120_REG_POWER_FACTOR   0x0018
+#define SDM120_REG_FREQUENCY      0x0046
+#define SDM120_REG_IMPORT_ENERGY  0x0048
+
 class Tenergy32Hub
 {
 public:
-    const String _version = "1.6"; // Library version
+    const String _version = "1.7"; // Library version
 
 public:
     Tenergy32Hub();
@@ -141,7 +152,16 @@ public:
     // วัดเปอร์เซนต์แบตเตอรี่ (0-100%)
     bool readBattery_SOC(float &batteryVoltage, float &soc); // Returns battery percentage (0-100%)
 
-
+    // SDM120 Modbus functions
+    bool readSDM120Float(uint8_t slaveAddr, uint16_t regAddr, float &value, HardwareSerial &serial = Serial2, uint32_t baud = 9600);
+    bool readSDM120All(uint8_t slaveAddr, float &voltage, float &current, float &activePower, float &importEnergy, HardwareSerial &serial = Serial2, uint32_t baud = 9600);
+    bool readSDM120All(uint8_t slaveAddr, float &voltage, float &current, float &activePower, float &importEnergy, float &powerFactor, float &frequency, HardwareSerial &serial = Serial2, uint32_t baud = 9600);
+    bool readSDM120Voltage(uint8_t slaveAddr, float &voltage, HardwareSerial &serial = Serial2, uint32_t baud = 9600);
+    bool readSDM120Current(uint8_t slaveAddr, float &current, HardwareSerial &serial = Serial2, uint32_t baud = 9600);
+    bool readSDM120ActivePower(uint8_t slaveAddr, float &activePower, HardwareSerial &serial = Serial2, uint32_t baud = 9600);
+    bool readSDM120ImportEnergy(uint8_t slaveAddr, float &importEnergy, HardwareSerial &serial = Serial2, uint32_t baud = 9600);
+    bool readSDM120PowerFactor(uint8_t slaveAddr, float &powerFactor, HardwareSerial &serial = Serial2, uint32_t baud = 9600);
+    bool readSDM120Frequency(uint8_t slaveAddr, float &frequency, HardwareSerial &serial = Serial2, uint32_t baud = 9600);  
 
 private:
     Adafruit_SSD1306 *_oled;

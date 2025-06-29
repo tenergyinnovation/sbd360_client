@@ -1,6 +1,7 @@
 // File: tenergy32hub.cpp
 #include "tenergy32hub.h"
 #include <Ticker.h>
+#include <HardwareSerial.h>
 
 // Initialize static instance pointer to NULL.
 Tenergy32Hub *Tenergy32Hub::_instance = nullptr;
@@ -516,7 +517,7 @@ void Tenergy32Hub::displayOLEDInfo()
 bool Tenergy32Hub::initLCD(uint8_t addr, uint8_t cols, uint8_t rows)
 {
     Serial.println("Initializing LCD...");
-    if(_oled)
+    if (_oled)
     {
         _oled->clearDisplay();
         _oled->setCursor(0, 0);
@@ -937,7 +938,7 @@ void Tenergy32Hub::blinkbuildingLED(uint32_t intervalMillis)
  ***********************************************************************/
 bool Tenergy32Hub::readBattery_SOC(float &batteryVoltage, float &soc)
 {
-     batteryVoltage = (readADCChannel(3) * 0.1875 / 1000.0) * (2.0833); // แปลงค่า ADC เป็นแรงดัน
+    batteryVoltage = (readADCChannel(3) * 0.1875 / 1000.0) * (2.0833); // แปลงค่า ADC เป็นแรงดัน
     char _line1[32];
     char _line2[32];
     // พารามิเตอร์ที่ได้จากการ fitting
@@ -969,4 +970,171 @@ bool Tenergy32Hub::readBattery_SOC(float &batteryVoltage, float &soc)
         displayOLEDLines(_line1, _line2, "", "");
         return false;
     }
+}
+
+/***********************************************************************
+ * FUNCTION:    readSDM120Float
+ * DESCRIPTION: อ่านค่า float (32-bit) จากรีจิสเตอร์ของ SDM120 Modbus RTU
+ * PARAMETERS:  slaveAddr - Modbus slave address (ปกติ SDM120 = 1)
+ *              regAddr   - Register address (เช่น 0x0000 สำหรับ Voltage)
+ *              value     - reference สำหรับเก็บค่าที่อ่านได้
+ *              serial    - Serial port ที่ใช้ (เช่น Serial2)
+ *              baud      - baudrate (default 9600)
+ * RETURNED:    true ถ้าอ่านสำเร็จ, false ถ้าอ่านไม่สำเร็จ
+ ***********************************************************************/
+bool Tenergy32Hub::readSDM120Float(uint8_t slaveAddr, uint16_t regAddr, float &value, HardwareSerial &serial, uint32_t baud)
+{
+    // SDM120 ใช้ Modbus RTU Function 0x04 (Read Input Registers)
+    // ส่งคำสั่ง: [slaveAddr][0x04][regHi][regLo][0x00][0x02][CRC_L][CRC_H]
+    uint8_t frame[8];
+    frame[0] = slaveAddr;
+    frame[1] = 0x04;
+    frame[2] = (regAddr >> 8) & 0xFF;
+    frame[3] = regAddr & 0xFF;
+    frame[4] = 0x00;
+    frame[5] = 0x02; // อ่าน 2 รีจิสเตอร์ (4 bytes = float)
+    // คำนวณ CRC16
+    uint16_t crc = 0xFFFF;
+    for (int i = 0; i < 6; i++) {
+        crc ^= frame[i];
+        for (int j = 0; j < 8; j++) {
+            if (crc & 0x0001)
+                crc = (crc >> 1) ^ 0xA001;
+            else
+                crc = crc >> 1;
+        }
+    }
+    frame[6] = crc & 0xFF;         // CRC Low byte
+    frame[7] = (crc >> 8) & 0xFF;  // CRC High byte
+
+    serial.begin(baud, SERIAL_8N1, PIN_RX_485, PIN_TX_485);
+    while (serial.available()) serial.read(); // flush
+
+    serial.write(frame, 8);
+    serial.flush();
+
+    // รอรับข้อมูลตอบกลับ (9 bytes)
+    uint32_t start = millis();
+    while (serial.available() < 9 && (millis() - start) < 200) {
+        delay(1);
+    }
+    if (serial.available() < 9) return false;
+
+    uint8_t resp[9];
+    for (int i = 0; i < 9; i++) resp[i] = serial.read();
+
+    // ตรวจสอบ slaveAddr, function, byte count
+    if (resp[0] != slaveAddr || resp[1] != 0x04 || resp[2] != 4) return false;
+
+    // ตรวจสอบ CRC
+    uint16_t crc_resp = 0xFFFF;
+    for (int i = 0; i < 7; i++) {
+        crc_resp ^= resp[i];
+        for (int j = 0; j < 8; j++) {
+            if (crc_resp & 0x0001)
+                crc_resp = (crc_resp >> 1) ^ 0xA001;
+            else
+                crc_resp = crc_resp >> 1;
+        }
+    }
+    uint16_t crc_recv = resp[7] | (resp[8] << 8);
+    if (crc_resp != crc_recv) return false;
+
+    // แก้ไขการแปลง byte order ให้ถูกต้อง (SDM120 ส่ง [HiHi][HiLo][LoHi][LoLo])
+    uint8_t floatBytes[4];
+    floatBytes[0] = resp[6]; // LoLo
+    floatBytes[1] = resp[5]; // LoHi
+    floatBytes[2] = resp[4]; // HiLo
+    floatBytes[3] = resp[3]; // HiHi
+    float f;
+    memcpy(&f, floatBytes, 4);
+    value = f;
+    return true;
+}
+
+/***********************************************************************
+ * FUNCTION:    readSDM120All
+ * DESCRIPTION: อ่านค่าหลักๆ จาก SDM120 (Voltage, Current, Active Power, Import Energy)
+ * PARAMETERS:  slaveAddr - Modbus slave address
+ *              voltage, current, activePower, importEnergy - reference สำหรับเก็บค่าที่อ่านได้
+ *              serial    - Serial port ที่ใช้ (เช่น Serial2)
+ *              baud      - baudrate (default 9600)
+ * RETURNED:    true ถ้าอ่านสำเร็จทั้งหมด, false ถ้ามีค่าใดอ่านไม่สำเร็จ
+ ***********************************************************************/
+bool Tenergy32Hub::readSDM120All(uint8_t slaveAddr, float &voltage, float &current, float &activePower, float &importEnergy, HardwareSerial &serial, uint32_t baud)
+{
+    bool ok = true;
+    ok &= readSDM120Float(slaveAddr, SDM120_REG_VOLTAGE, voltage, serial, baud);
+    ok &= readSDM120Float(slaveAddr, SDM120_REG_CURRENT, current, serial, baud);
+    ok &= readSDM120Float(slaveAddr, SDM120_REG_ACTIVE_POWER, activePower, serial, baud);
+    ok &= readSDM120Float(slaveAddr, SDM120_REG_IMPORT_ENERGY, importEnergy, serial, baud);
+    return ok;
+}
+
+/***********************************************************************
+ * FUNCTION:    readSDM120All
+ * DESCRIPTION: อ่านค่าหลักๆ จาก SDM120 (Voltage, Current, Active Power, Import Energy, Power Factor, Frequency)
+ * PARAMETERS:  slaveAddr - Modbus slave address
+ *              voltage, current, activePower, importEnergy, powerFactor, frequency - reference สำหรับเก็บค่าที่อ่านได้
+ *              serial    - Serial port ที่ใช้ (เช่น Serial2)
+ *              baud      - baudrate (default 9600)
+ * RETURNED:    true ถ้าอ่านสำเร็จทั้งหมด, false ถ้ามีค่าใดอ่านไม่สำเร็จ
+ ***********************************************************************/
+bool Tenergy32Hub::readSDM120All(
+    uint8_t slaveAddr,
+    float &voltage, float &current, float &activePower, float &importEnergy,
+    float &powerFactor, float &frequency,
+    HardwareSerial &serial, uint32_t baud)
+{
+    bool ok = true;
+    ok &= readSDM120Float(slaveAddr, SDM120_REG_VOLTAGE, voltage, serial, baud);
+    ok &= readSDM120Float(slaveAddr, SDM120_REG_CURRENT, current, serial, baud);
+    ok &= readSDM120Float(slaveAddr, SDM120_REG_ACTIVE_POWER, activePower, serial, baud);
+    ok &= readSDM120Float(slaveAddr, SDM120_REG_IMPORT_ENERGY, importEnergy, serial, baud);
+    ok &= readSDM120Float(slaveAddr, SDM120_REG_POWER_FACTOR, powerFactor, serial, baud);
+    ok &= readSDM120Float(slaveAddr, SDM120_REG_FREQUENCY, frequency, serial, baud);
+    return ok;
+}
+
+/***********************************************************************
+ * FUNCTION:    readSDM120Voltage
+ * DESCRIPTION: Reads the voltage from SDM120.
+ * PARAMETERS:  slaveAddr - Modbus slave address
+ *              voltage - reference to store the voltage value
+ *              serial - Serial port to use (default Serial2)
+ *              baud - baudrate (default 9600)
+ * RETURNED:    true if reading is successful, false otherwise
+ ***********************************************************************/
+bool Tenergy32Hub::readSDM120Voltage(uint8_t slaveAddr, float &voltage, HardwareSerial &serial, uint32_t baud)
+{
+    return readSDM120Float(slaveAddr, SDM120_REG_VOLTAGE, voltage, serial, baud);
+}
+/***********************************************************************
+ * FUNCTION:    readSDM120Current
+ * DESCRIPTION: Reads the current from SDM120.
+ * PARAMETERS:  slaveAddr - Modbus slave address
+ *              current - reference to store the current value
+ *              serial - Serial port to use (default Serial2)
+ *              baud - baudrate (default 9600)
+ * RETURNED:    true if reading is successful, false otherwise
+ ***********************************************************************/
+bool Tenergy32Hub::readSDM120Current(uint8_t slaveAddr, float &current, HardwareSerial &serial, uint32_t baud)
+{
+    return readSDM120Float(slaveAddr, SDM120_REG_CURRENT, current, serial, baud);
+}
+bool Tenergy32Hub::readSDM120ActivePower(uint8_t slaveAddr, float &activePower, HardwareSerial &serial, uint32_t baud)
+{
+    return readSDM120Float(slaveAddr, SDM120_REG_ACTIVE_POWER, activePower, serial, baud);
+}
+bool Tenergy32Hub::readSDM120ImportEnergy(uint8_t slaveAddr, float &importEnergy, HardwareSerial &serial, uint32_t baud)
+{
+    return readSDM120Float(slaveAddr, SDM120_REG_IMPORT_ENERGY, importEnergy, serial, baud);
+}
+bool Tenergy32Hub::readSDM120PowerFactor(uint8_t slaveAddr, float &powerFactor, HardwareSerial &serial, uint32_t baud)
+{
+    return readSDM120Float(slaveAddr, SDM120_REG_POWER_FACTOR, powerFactor, serial, baud);
+}
+bool Tenergy32Hub::readSDM120Frequency(uint8_t slaveAddr, float &frequency, HardwareSerial &serial, uint32_t baud)
+{
+    return readSDM120Float(slaveAddr, SDM120_REG_FREQUENCY, frequency, serial, baud);
 }
