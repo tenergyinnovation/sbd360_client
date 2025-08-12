@@ -12,6 +12,10 @@ Tenergy32Hub *Tenergy32Hub::_instance = nullptr;
  *              Initializes member variables and sets up the instance pointer.
  ***********************************************************************/
 Tenergy32Hub::Tenergy32Hub() : _oled(nullptr), _lcd(nullptr), _ads(nullptr),
+                               _sw1_state(false), _sw1_lastState(false), _sw1_lastReading(false),
+                               _sw1_lastDebounceTime(0), _sw1_count(0),
+                               _sw2_state(false), _sw2_lastState(false), _sw2_lastReading(false),
+                               _sw2_lastDebounceTime(0), _sw2_count(0),
                                _redState(false), _blueState(false), _buildingState(false)
 {
     _instance = this; // Assign the static instance pointer.
@@ -101,6 +105,18 @@ bool Tenergy32Hub::begin(uint32_t loraFreq)
     pinMode(PIN_SLIDE_SWITCH, INPUT);
     pinMode(PIN_SW1, INPUT_PULLUP);
     pinMode(PIN_SW2, INPUT_PULLUP);
+    
+    // Initialize debounce variables for SW1 and SW2
+    _sw1_lastReading = digitalRead(PIN_SW1);
+    _sw1_state = _sw1_lastState = _sw1_lastReading;
+    _sw1_lastDebounceTime = millis();
+    _sw1_count = 0;
+    
+    _sw2_lastReading = digitalRead(PIN_SW2);
+    _sw2_state = _sw2_lastState = _sw2_lastReading;
+    _sw2_lastDebounceTime = millis();
+    _sw2_count = 0;
+    
     pinMode(PIN_MOTION_SENSOR, INPUT);
     pinMode(PIN_WATER_LEAK, INPUT);
     pinMode(PIN_RELAY, OUTPUT);
@@ -225,19 +241,117 @@ bool Tenergy32Hub::readSlideSwitch() { return digitalRead(PIN_SLIDE_SWITCH) == H
 
 /***********************************************************************
  * FUNCTION:    readSW1
- * DESCRIPTION: Reads the state of switch SW1.
+ * DESCRIPTION: Reads the debounced state of switch SW1.
  * PARAMETERS:  none
  * RETURNED:    true if the switch is pressed, false otherwise.
  ***********************************************************************/
-bool Tenergy32Hub::readSW1() { return digitalRead(PIN_SW1) == LOW; }
+bool Tenergy32Hub::readSW1() { 
+    bool reading = digitalRead(PIN_SW1);
+    
+    // If the switch changed, due to noise or pressing
+    if (reading != _sw1_lastReading) {
+        // Reset the debouncing timer
+        _sw1_lastDebounceTime = millis();
+    }
+    
+    // If enough time has passed since the last change
+    if ((millis() - _sw1_lastDebounceTime) > DEBOUNCE_DELAY) {
+        // If the button state has changed
+        if (reading != _sw1_state) {
+            _sw1_state = reading;
+            
+            // Count button presses (when button goes from HIGH to LOW for pullup)
+            if (_sw1_state == LOW) {
+                _sw1_count++;
+            }
+        }
+    }
+    
+    // Save the reading for next time
+    _sw1_lastReading = reading;
+    
+    // Return inverted state because we use INPUT_PULLUP (LOW = pressed)
+    return _sw1_state == LOW;
+}
 
 /***********************************************************************
  * FUNCTION:    readSW2
- * DESCRIPTION: Reads the state of switch SW2.
+ * DESCRIPTION: Reads the debounced state of switch SW2.
  * PARAMETERS:  none
  * RETURNED:    true if the switch is pressed, false otherwise.
  ***********************************************************************/
-bool Tenergy32Hub::readSW2() { return digitalRead(PIN_SW2) == LOW; }
+bool Tenergy32Hub::readSW2() { 
+    bool reading = digitalRead(PIN_SW2);
+    
+    // If the switch changed, due to noise or pressing
+    if (reading != _sw2_lastReading) {
+        // Reset the debouncing timer
+        _sw2_lastDebounceTime = millis();
+    }
+    
+    // If enough time has passed since the last change
+    if ((millis() - _sw2_lastDebounceTime) > DEBOUNCE_DELAY) {
+        // If the button state has changed
+        if (reading != _sw2_state) {
+            _sw2_state = reading;
+            
+            // Count button presses (when button goes from HIGH to LOW for pullup)
+            if (_sw2_state == LOW) {
+                _sw2_count++;
+            }
+        }
+    }
+    
+    // Save the reading for next time
+    _sw2_lastReading = reading;
+    
+    // Return inverted state because we use INPUT_PULLUP (LOW = pressed)
+    return _sw2_state == LOW;
+}
+
+/***********************************************************************
+ * FUNCTION:    getSW1Count
+ * DESCRIPTION: Gets the number of times SW1 was pressed (with debounce).
+ * PARAMETERS:  none
+ * RETURNED:    Number of button presses
+ ***********************************************************************/
+unsigned int Tenergy32Hub::getSW1Count() {
+    // Call readSW1() to update the state first
+    readSW1();
+    return _sw1_count;
+}
+
+/***********************************************************************
+ * FUNCTION:    getSW2Count
+ * DESCRIPTION: Gets the number of times SW2 was pressed (with debounce).
+ * PARAMETERS:  none
+ * RETURNED:    Number of button presses
+ ***********************************************************************/
+unsigned int Tenergy32Hub::getSW2Count() {
+    // Call readSW2() to update the state first
+    readSW2();
+    return _sw2_count;
+}
+
+/***********************************************************************
+ * FUNCTION:    resetSW1Count
+ * DESCRIPTION: Resets the SW1 press count to zero.
+ * PARAMETERS:  none
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::resetSW1Count() {
+    _sw1_count = 0;
+}
+
+/***********************************************************************
+ * FUNCTION:    resetSW2Count
+ * DESCRIPTION: Resets the SW2 press count to zero.
+ * PARAMETERS:  none
+ * RETURNED:    none
+ ***********************************************************************/
+void Tenergy32Hub::resetSW2Count() {
+    _sw2_count = 0;
+}
 
 /***********************************************************************
  * FUNCTION:    readMotionSensor
