@@ -6,7 +6,7 @@
  * Hardware     :     tenergy32hub
  * Author       :     Tenergy Innovation Co., Ltd.
  * Date         :     27/04/2025
- * Revision     :     1.8
+ * Revision     :     1.8.1
  * Rev1.0       :     Original
  * Rev1.1       :     Add Example for LoRa receive test [2025-05-02]
  * Rev1.2       :     Add showLibraryVersion() function [2025-05-03]
@@ -20,6 +20,7 @@
  *                    - Implemented internal debounce logic (50ms delay) without external library
  *                    - Added getSW1Count(), getSW2Count(), resetSW1Count(), resetSW2Count()
  *                    - Enhanced switch reading with built-in debounce mechanism
+ * Rev1.8.1     :     - Fix readSW1() and readSW2() to avoid double counting issue [2026-01-17 14:16]
  * website      :     http://www.tenergyinnovation.co.th
  * Email        :     uten.boonliam@tenergyinnovation.co.th
  * TEL          :     +66 89-140-7205
@@ -76,7 +77,7 @@
 class Tenergy32Hub
 {
 public:
-    const String _version = "1.8"; // Library version
+    const String _version = "1.8.1"; // Library version
 
 public:
     Tenergy32Hub();
@@ -192,6 +193,10 @@ private:
     
     // Debounce delay in milliseconds
     static const unsigned long DEBOUNCE_DELAY = 50;
+
+    // Private helper functions for updating switch states
+    void _updateSW1State();
+    void _updateSW2State();
 
     // Private Ticker objects for asynchronous LED blinking.
     Ticker _tickerRed;

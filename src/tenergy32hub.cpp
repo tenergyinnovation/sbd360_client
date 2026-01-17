@@ -172,41 +172,41 @@ bool Tenergy32Hub::begin(uint32_t loraFreq)
     }
 
     // Step 5: Initialize ADS1115 ADC
-    Serial.println("Initializing ADC...");
-    if (_oled)
-    {
-        _oled->clearDisplay();
-        _oled->setCursor(0, 0);
-        _oled->println("Init ADC...");
-        _oled->display();
-        vTaskDelay(300); // Delay to show the message
-    }
-    bool adcInit = initADC(ADS1115_ADDRESS);
-    if (!adcInit)
-    {
-        Serial.println("fail to initialize ADS1115");
-        if (_oled)
-        {
-            _oled->setCursor(0, 10);
-            _oled->println("ADS Init Fail");
-            _oled->display();
-            vTaskDelay(1000);
-            _oled->clearDisplay();
-        }
-        return false;
-    }
-    else
-    {
-        Serial.println("ADS1115 initialized successfully.");
-        if (_oled)
-        {
-            _oled->setCursor(0, 10);
-            _oled->println("ADS OK");
-            _oled->display();
-            vTaskDelay(1000); // Delay to show the message
-            _oled->clearDisplay();
-        }
-    }
+    // Serial.println("Initializing ADC...");
+    // if (_oled)
+    // {
+    //     _oled->clearDisplay();
+    //     _oled->setCursor(0, 0);
+    //     _oled->println("Init ADC...");
+    //     _oled->display();
+    //     vTaskDelay(300); // Delay to show the message
+    // }
+    // bool adcInit = initADC(ADS1115_ADDRESS);
+    // if (!adcInit)
+    // {
+    //     Serial.println("fail to initialize ADS1115");
+    //     if (_oled)
+    //     {
+    //         _oled->setCursor(0, 10);
+    //         _oled->println("ADS Init Fail");
+    //         _oled->display();
+    //         vTaskDelay(1000);
+    //         _oled->clearDisplay();
+    //     }
+    //     return false;
+    // }
+    // else
+    // {
+    //     Serial.println("ADS1115 initialized successfully.");
+    //     if (_oled)
+    //     {
+    //         _oled->setCursor(0, 10);
+    //         _oled->println("ADS OK");
+    //         _oled->display();
+    //         vTaskDelay(1000); // Delay to show the message
+    //         _oled->clearDisplay();
+    //     }
+    // }
 
     // Final status messages
     Serial.println("I2C initialized successfully.");
@@ -240,12 +240,13 @@ bool Tenergy32Hub::begin(uint32_t loraFreq)
 bool Tenergy32Hub::readSlideSwitch() { return digitalRead(PIN_SLIDE_SWITCH) == HIGH; }
 
 /***********************************************************************
- * FUNCTION:    readSW1
- * DESCRIPTION: Reads the debounced state of switch SW1.
+ * FUNCTION:    _updateSW1State
+ * DESCRIPTION: Internal function to update the debounced state of SW1.
+ *              This function is called by both readSW1() and getSW1Count()
  * PARAMETERS:  none
- * RETURNED:    true if the switch is pressed, false otherwise.
+ * RETURNED:    nothing (void)
  ***********************************************************************/
-bool Tenergy32Hub::readSW1() { 
+void Tenergy32Hub::_updateSW1State() {
     bool reading = digitalRead(PIN_SW1);
     
     // If the switch changed, due to noise or pressing
@@ -269,18 +270,38 @@ bool Tenergy32Hub::readSW1() {
     
     // Save the reading for next time
     _sw1_lastReading = reading;
-    
-    // Return inverted state because we use INPUT_PULLUP (LOW = pressed)
-    return _sw1_state == LOW;
 }
 
 /***********************************************************************
- * FUNCTION:    readSW2
- * DESCRIPTION: Reads the debounced state of switch SW2.
+ * FUNCTION:    readSW1
+ * DESCRIPTION: Reads the debounced state of switch SW1 with edge detection.
+ *              Returns true only on the first detection of a press (rising edge).
  * PARAMETERS:  none
- * RETURNED:    true if the switch is pressed, false otherwise.
+ * RETURNED:    true if the switch is pressed (first time only), false otherwise.
  ***********************************************************************/
-bool Tenergy32Hub::readSW2() { 
+bool Tenergy32Hub::readSW1() {
+    _updateSW1State();
+    
+    bool currentState = _sw1_state == LOW;
+    bool result = false;
+    
+    // Detect rising edge (LOW -> HIGH in terms of pressed state)
+    if (currentState && !_sw1_lastState) {
+        result = true;
+    }
+    
+    _sw1_lastState = currentState;
+    return result;
+}
+
+/***********************************************************************
+ * FUNCTION:    _updateSW2State
+ * DESCRIPTION: Internal function to update the debounced state of SW2.
+ *              This function is called by both readSW2() and getSW2Count()
+ * PARAMETERS:  none
+ * RETURNED:    nothing (void)
+ ***********************************************************************/
+void Tenergy32Hub::_updateSW2State() {
     bool reading = digitalRead(PIN_SW2);
     
     // If the switch changed, due to noise or pressing
@@ -304,9 +325,28 @@ bool Tenergy32Hub::readSW2() {
     
     // Save the reading for next time
     _sw2_lastReading = reading;
+}
+
+/***********************************************************************
+ * FUNCTION:    readSW2
+ * DESCRIPTION: Reads the debounced state of switch SW2 with edge detection.
+ *              Returns true only on the first detection of a press (rising edge).
+ * PARAMETERS:  none
+ * RETURNED:    true if the switch is pressed (first time only), false otherwise.
+ ***********************************************************************/
+bool Tenergy32Hub::readSW2() {
+    _updateSW2State();
     
-    // Return inverted state because we use INPUT_PULLUP (LOW = pressed)
-    return _sw2_state == LOW;
+    bool currentState = _sw2_state == LOW;
+    bool result = false;
+    
+    // Detect rising edge (LOW -> HIGH in terms of pressed state)
+    if (currentState && !_sw2_lastState) {
+        result = true;
+    }
+    
+    _sw2_lastState = currentState;
+    return result;
 }
 
 /***********************************************************************
@@ -316,8 +356,8 @@ bool Tenergy32Hub::readSW2() {
  * RETURNED:    Number of button presses
  ***********************************************************************/
 unsigned int Tenergy32Hub::getSW1Count() {
-    // Call readSW1() to update the state first
-    readSW1();
+    // Update the state without triggering edge detection
+    _updateSW1State();
     return _sw1_count;
 }
 
@@ -328,8 +368,8 @@ unsigned int Tenergy32Hub::getSW1Count() {
  * RETURNED:    Number of button presses
  ***********************************************************************/
 unsigned int Tenergy32Hub::getSW2Count() {
-    // Call readSW2() to update the state first
-    readSW2();
+    // Update the state without triggering edge detection
+    _updateSW2State();
     return _sw2_count;
 }
 
