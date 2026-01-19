@@ -22,6 +22,8 @@
  *                    - Enhanced switch reading with built-in debounce mechanism
  * Rev1.8.1     :     - Fix readSW1() and readSW2() to avoid double counting issue [2026-01-17 14:16]
  * Rev1.9.0     :     - Add option to initialize ADS1115 and/or LoRa in begin() [2026-01-19 10:12]
+ * Rev1.10.0    :     - Add ModbusRTU Relay Module functions [2026-02-09 11:00]
+ *                    - Add pin RX3 and PIN_RX3m PIN_TX3 for HardwareSerial
  * website      :     http://www.tenergyinnovation.co.th
  * Email        :     uten.boonliam@tenergyinnovation.co.th
  * TEL          :     +66 89-140-7205
@@ -60,6 +62,8 @@
 #define PIN_LED_RED 4
 #define PIN_RX_485 16
 #define PIN_TX_485 17
+#define PIN_RX3 27
+#define PIN_TX3 26
 #define PIN_LORA_NSS 5
 #define PIN_LORA_SCK 18
 #define PIN_LORA_MISO 19
@@ -215,6 +219,11 @@ private:
     bool _blueState;
     bool _buildingState;
 
+    // RelayModusRTU pins (จำไว้เพื่อใช้ในฟังก์ชั่นอื่น ๆ)
+    uint8_t _relayRTU_rx;
+    uint8_t _relayRTU_tx;
+    uint8_t _relayRTU_port;  // 1 for rs485(1), 2 for rs485_2(2)
+
     // Static pointer to allow callbacks to access this instance.
     static Tenergy32Hub *_instance;
 
@@ -222,6 +231,12 @@ private:
     static void redLEDToggle();
     static void blueLEDToggle();
     static void buildingLEDToggle();
+
+    // ModbusRTU Relay Module 
+    bool RelayModusRTU_begin(uint8_t rx = PIN_RX3, uint8_t tx = PIN_TX3);
+    int8_t RelayModusRTU_searchAddress(uint8_t startID = 1, uint8_t stopID = 20);
+    bool RelayModusRTU_Control(uint8_t address = 1, uint8_t channel = 1, bool state = true);
+    bool RelayModusRTU_Status(uint8_t address = 1, uint8_t channel = 1);
 };
 
 #endif // TENERGY32HUB_H
