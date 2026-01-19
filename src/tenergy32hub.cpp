@@ -46,10 +46,11 @@ void Tenergy32Hub::showLibraryVersion()
  * DESCRIPTION: Initializes the Tenergy32Hub hardware.
  *              Sets up pin modes, initializes LoRa, I2C, and other
  *              peripherals.
- * PARAMETERS:  loraFreq - Frequency for LoRa communication (default is 433E6).
+ * PARAMETERS:  userOptions - options to initialize ADS1115 and/or LoRa
+ *              loraFreq - frequency for LoRa initialization (default 443E6)
  * RETURNED:    true if initialization is successful, false otherwise.
  ***********************************************************************/
-bool Tenergy32Hub::begin(uint32_t loraFreq)
+bool Tenergy32Hub::begin(uint8_t userOptions, uint32_t loraFreq)
 {
     // Initialize serial communication
     Serial.begin(115200);
@@ -133,80 +134,94 @@ bool Tenergy32Hub::begin(uint32_t loraFreq)
         _oled->clearDisplay();
     }
 
-    // Step 4: Initialize LoRa
-    Serial.println("Initializing LoRa...");
-    if (_oled)
+    // Step 4: Initialize LoRa (if requested)
+    if (userOptions == USER_LORA || userOptions == USER_ADS1115_LORA)
     {
-        _oled->clearDisplay();
-        _oled->setCursor(0, 0);
-        _oled->println("Init LoRa...");
-        _oled->display();
-        vTaskDelay(300); // Delay to show the message
-    }
-    SPI.begin(PIN_LORA_SCK, PIN_LORA_MISO, PIN_LORA_MOSI);
-    LoRa.setPins(PIN_LORA_NSS, PIN_LORA_RESET, PIN_LORA_DIO0);
-    if (!LoRa.begin(loraFreq))
-    {
-        Serial.println("fail to initial LoRa");
+        Serial.println("Initializing LoRa...");
         if (_oled)
         {
-            _oled->setCursor(0, 10);
-            _oled->println("LoRa Init Fail");
-            _oled->display();
-            vTaskDelay(1000);
             _oled->clearDisplay();
+            _oled->setCursor(0, 0);
+            _oled->println("Init LoRa...");
+            _oled->display();
+            vTaskDelay(300); // Delay to show the message
         }
-        // return false;
+        SPI.begin(PIN_LORA_SCK, PIN_LORA_MISO, PIN_LORA_MOSI);
+        LoRa.setPins(PIN_LORA_NSS, PIN_LORA_RESET, PIN_LORA_DIO0);
+        if (!LoRa.begin(loraFreq))
+        {
+            Serial.println("fail to initial LoRa");
+            if (_oled)
+            {
+                _oled->setCursor(0, 10);
+                _oled->println("LoRa Init Fail");
+                _oled->display();
+                vTaskDelay(1000);
+                _oled->clearDisplay();
+            }
+            // return false;
+        }
+        else
+        {
+            Serial.println("LoRa initialized successfully.");
+            if (_oled)
+            {
+                _oled->setCursor(0, 10);
+                _oled->println("LoRa OK");
+                _oled->display();
+                vTaskDelay(1000); // Delay to show the message
+                _oled->clearDisplay();
+            }
+        }
     }
     else
     {
-        Serial.println("LoRa initialized successfully.");
-        if (_oled)
-        {
-            _oled->setCursor(0, 10);
-            _oled->println("LoRa OK");
-            _oled->display();
-            vTaskDelay(1000); // Delay to show the message
-            _oled->clearDisplay();
-        }
+        Serial.println("LoRa initialization skipped (not requested).");
     }
 
-    // Step 5: Initialize ADS1115 ADC
-    // Serial.println("Initializing ADC...");
-    // if (_oled)
-    // {
-    //     _oled->clearDisplay();
-    //     _oled->setCursor(0, 0);
-    //     _oled->println("Init ADC...");
-    //     _oled->display();
-    //     vTaskDelay(300); // Delay to show the message
-    // }
-    // bool adcInit = initADC(ADS1115_ADDRESS);
-    // if (!adcInit)
-    // {
-    //     Serial.println("fail to initialize ADS1115");
-    //     if (_oled)
-    //     {
-    //         _oled->setCursor(0, 10);
-    //         _oled->println("ADS Init Fail");
-    //         _oled->display();
-    //         vTaskDelay(1000);
-    //         _oled->clearDisplay();
-    //     }
-    //     return false;
-    // }
-    // else
-    // {
-    //     Serial.println("ADS1115 initialized successfully.");
-    //     if (_oled)
-    //     {
-    //         _oled->setCursor(0, 10);
-    //         _oled->println("ADS OK");
-    //         _oled->display();
-    //         vTaskDelay(1000); // Delay to show the message
-    //         _oled->clearDisplay();
-    //     }
-    // }
+    // Step 5: Initialize ADS1115 ADC (if requested)
+    if (userOptions == USER_ADS1115 || userOptions == USER_ADS1115_LORA)
+    {
+        Serial.println("Initializing ADC...");
+        if (_oled)
+        {
+            _oled->clearDisplay();
+            _oled->setCursor(0, 0);
+            _oled->println("Init ADC...");
+            _oled->display();
+            vTaskDelay(300); // Delay to show the message
+        }
+        bool adcInit = initADC(ADS1115_ADDRESS);
+        if (!adcInit)
+        {
+            Serial.println("fail to initialize ADS1115");
+            if (_oled)
+            {
+                _oled->setCursor(0, 10);
+                _oled->println("ADS Init Fail");
+                _oled->display();
+                vTaskDelay(1000);
+                _oled->clearDisplay();
+            }
+            // return false;
+        }
+        else
+        {
+            Serial.println("ADS1115 initialized successfully.");
+            if (_oled)
+            {
+                _oled->setCursor(0, 10);
+                _oled->println("ADS OK");
+                _oled->display();
+                vTaskDelay(1000); // Delay to show the message
+                _oled->clearDisplay();
+            }
+        }
+    }
+    else
+    {
+        Serial.println("ADS1115 initialization skipped (not requested).");
+    }
 
     // Final status messages
     Serial.println("I2C initialized successfully.");

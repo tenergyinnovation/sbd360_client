@@ -6,7 +6,7 @@
  * Hardware     :     tenergy32hub
  * Author       :     Tenergy Innovation Co., Ltd.
  * Date         :     27/04/2025
- * Revision     :     1.8.1
+ * Revision     :     1.9.0
  * Rev1.0       :     Original
  * Rev1.1       :     Add Example for LoRa receive test [2025-05-02]
  * Rev1.2       :     Add showLibraryVersion() function [2025-05-03]
@@ -21,6 +21,7 @@
  *                    - Added getSW1Count(), getSW2Count(), resetSW1Count(), resetSW2Count()
  *                    - Enhanced switch reading with built-in debounce mechanism
  * Rev1.8.1     :     - Fix readSW1() and readSW2() to avoid double counting issue [2026-01-17 14:16]
+ * Rev1.9.0     :     - Add option to initialize ADS1115 and/or LoRa in begin() [2026-01-19 10:12]
  * website      :     http://www.tenergyinnovation.co.th
  * Email        :     uten.boonliam@tenergyinnovation.co.th
  * TEL          :     +66 89-140-7205
@@ -37,6 +38,12 @@
 #include <Adafruit_ADS1X15.h>
 #include <Ticker.h> // Include Ticker library
 #include <HardwareSerial.h>
+
+// User initialization options for begin() function
+#define USER_NONE          0
+#define USER_ADS1115       1
+#define USER_LORA          2
+#define USER_ADS1115_LORA  3
 
 // Pin definitions
 #define PIN_SLIDE_SWITCH 36
@@ -77,7 +84,7 @@
 class Tenergy32Hub
 {
 public:
-    const String _version = "1.8.1"; // Library version
+    const String _version = "1.9.0"; // Library version
 
 public:
     Tenergy32Hub();
@@ -86,7 +93,7 @@ public:
     void showLibraryVersion();
 
     // Initialize the Tenergy32 Hub board
-    bool begin(uint32_t loraFreq = 443E6);
+    bool begin(uint8_t userOptions = USER_NONE, uint32_t loraFreq = 443E6);
 
     // Switches and sensors
     bool readSlideSwitch();
