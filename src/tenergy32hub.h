@@ -6,7 +6,7 @@
  * Hardware     :     tenergy32hub
  * Author       :     Tenergy Innovation Co., Ltd.
  * Date         :     27/04/2025
- * Revision     :     1.9.0
+ * Revision     :     1.10.1
  * Rev1.0       :     Original
  * Rev1.1       :     Add Example for LoRa receive test [2025-05-02]
  * Rev1.2       :     Add showLibraryVersion() function [2025-05-03]
@@ -24,6 +24,7 @@
  * Rev1.9.0     :     - Add option to initialize ADS1115 and/or LoRa in begin() [2026-01-19 10:12]
  * Rev1.10.0    :     - Add ModbusRTU Relay Module functions [2026-02-09 11:00]
  *                    - Add pin RX3 and PIN_RX3m PIN_TX3 for HardwareSerial
+ * Rev1.10.1    :     - Fix RelayModusRTU to public function [2026-01-19 11:00]
  * website      :     http://www.tenergyinnovation.co.th
  * Email        :     uten.boonliam@tenergyinnovation.co.th
  * TEL          :     +66 89-140-7205
@@ -42,10 +43,10 @@
 #include <HardwareSerial.h>
 
 // User initialization options for begin() function
-#define USER_NONE          0
-#define USER_ADS1115       1
-#define USER_LORA          2
-#define USER_ADS1115_LORA  3
+#define USER_NONE 0
+#define USER_ADS1115 1
+#define USER_LORA 2
+#define USER_ADS1115_LORA 3
 
 // Pin definitions
 #define PIN_SLIDE_SWITCH 36
@@ -77,18 +78,18 @@
 #define ADS1115_ADDRESS 0x48
 
 // --- SDM120 Modbus Register Address ---
-#define SDM120_REG_VOLTAGE        0x0000
-#define SDM120_REG_CURRENT        0x0006
-#define SDM120_REG_ACTIVE_POWER   0x000C
-#define SDM120_REG_APP_POWER      0x0012
-#define SDM120_REG_POWER_FACTOR   0x0018
-#define SDM120_REG_FREQUENCY      0x0046
-#define SDM120_REG_IMPORT_ENERGY  0x0048
+#define SDM120_REG_VOLTAGE 0x0000
+#define SDM120_REG_CURRENT 0x0006
+#define SDM120_REG_ACTIVE_POWER 0x000C
+#define SDM120_REG_APP_POWER 0x0012
+#define SDM120_REG_POWER_FACTOR 0x0018
+#define SDM120_REG_FREQUENCY 0x0046
+#define SDM120_REG_IMPORT_ENERGY 0x0048
 
 class Tenergy32Hub
 {
 public:
-    const String _version = "1.9.0"; // Library version
+    const String _version = "1.10.1"; // Library version
 
 public:
     Tenergy32Hub();
@@ -103,10 +104,10 @@ public:
     bool readSlideSwitch();
     bool readSW1();
     bool readSW2();
-    unsigned int getSW1Count();    // Get number of times SW1 was pressed
-    unsigned int getSW2Count();    // Get number of times SW2 was pressed
-    void resetSW1Count();          // Reset SW1 press count
-    void resetSW2Count();          // Reset SW2 press count
+    unsigned int getSW1Count(); // Get number of times SW1 was pressed
+    unsigned int getSW2Count(); // Get number of times SW2 was pressed
+    void resetSW1Count();       // Reset SW1 press count
+    void resetSW2Count();       // Reset SW2 press count
     int readMotionSensor();
     int readWaterLeak();
 
@@ -149,8 +150,8 @@ public:
 
     bool initLCD(uint8_t address = LCD_ADDRESS, uint8_t cols = 16, uint8_t rows = 2); // Initializes the LCD display with specified address, columns, and rows.
     void displayLCD(const char *text, uint8_t col = 0, uint8_t row = 0);
-    void clearLCD(); // Clears the LCD display and resets the cursor position.
-    void onBacklightLCD(); // Turns on the backlight of the LCD display.
+    void clearLCD();        // Clears the LCD display and resets the cursor position.
+    void onBacklightLCD();  // Turns on the backlight of the LCD display.
     void offBacklightLCD(); // Turns off the backlight of the LCD display.
 
     bool initADC(uint8_t address = ADS1115_ADDRESS);
@@ -181,7 +182,7 @@ public:
     bool readSDM120ActivePower(uint8_t slaveAddr, float &activePower, HardwareSerial &serial = Serial2, uint32_t baud = 9600);
     bool readSDM120ImportEnergy(uint8_t slaveAddr, float &importEnergy, HardwareSerial &serial = Serial2, uint32_t baud = 9600);
     bool readSDM120PowerFactor(uint8_t slaveAddr, float &powerFactor, HardwareSerial &serial = Serial2, uint32_t baud = 9600);
-    bool readSDM120Frequency(uint8_t slaveAddr, float &frequency, HardwareSerial &serial = Serial2, uint32_t baud = 9600);  
+    bool readSDM120Frequency(uint8_t slaveAddr, float &frequency, HardwareSerial &serial = Serial2, uint32_t baud = 9600);
 
 private:
     Adafruit_SSD1306 *_oled;
@@ -194,14 +195,14 @@ private:
     bool _sw1_lastReading;
     unsigned long _sw1_lastDebounceTime;
     unsigned int _sw1_count;
-    
+
     // Debounce variables for SW2
     bool _sw2_state;
     bool _sw2_lastState;
     bool _sw2_lastReading;
     unsigned long _sw2_lastDebounceTime;
     unsigned int _sw2_count;
-    
+
     // Debounce delay in milliseconds
     static const unsigned long DEBOUNCE_DELAY = 50;
 
@@ -222,7 +223,7 @@ private:
     // RelayModusRTU pins (จำไว้เพื่อใช้ในฟังก์ชั่นอื่น ๆ)
     uint8_t _relayRTU_rx;
     uint8_t _relayRTU_tx;
-    uint8_t _relayRTU_port;  // 1 for rs485(1), 2 for rs485_2(2)
+    uint8_t _relayRTU_port; // 1 for rs485(1), 2 for rs485_2(2)
 
     // Static pointer to allow callbacks to access this instance.
     static Tenergy32Hub *_instance;
@@ -232,7 +233,8 @@ private:
     static void blueLEDToggle();
     static void buildingLEDToggle();
 
-    // ModbusRTU Relay Module 
+public:
+    // ModbusRTU Relay Module
     bool RelayModusRTU_begin(uint8_t rx = PIN_RX3, uint8_t tx = PIN_TX3);
     int8_t RelayModusRTU_searchAddress(uint8_t startID = 1, uint8_t stopID = 20);
     bool RelayModusRTU_Control(uint8_t address = 1, uint8_t channel = 1, bool state = true);
