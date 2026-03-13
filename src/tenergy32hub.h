@@ -6,7 +6,7 @@
  * Hardware     :     tenergy32hub
  * Author       :     Tenergy Innovation Co., Ltd.
  * Date         :     27/04/2025
- * Revision     :     1.10.1
+ * Revision     :     1.10.2
  * Rev1.0       :     Original
  * Rev1.1       :     Add Example for LoRa receive test [2025-05-02]
  * Rev1.2       :     Add showLibraryVersion() function [2025-05-03]
@@ -25,6 +25,7 @@
  * Rev1.10.0    :     - Add ModbusRTU Relay Module functions [2026-02-09 11:00]
  *                    - Add pin RX3 and PIN_RX3m PIN_TX3 for HardwareSerial
  * Rev1.10.1    :     - Fix RelayModusRTU to public function [2026-01-19 11:00]
+ * Rev1.10.2    :     - Buzzer beep for check ADS1115 initial fail [2026-03-13 11.52]
  * website      :     http://www.tenergyinnovation.co.th
  * Email        :     uten.boonliam@tenergyinnovation.co.th
  * TEL          :     +66 89-140-7205
@@ -89,7 +90,7 @@
 class Tenergy32Hub
 {
 public:
-    const String _version = "1.10.1"; // Library version
+    const String _version = "1.10.2"; // Library version
 
 public:
     Tenergy32Hub();

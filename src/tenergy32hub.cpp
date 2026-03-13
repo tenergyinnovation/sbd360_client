@@ -174,6 +174,7 @@ bool Tenergy32Hub::begin(uint8_t userOptions, uint32_t loraFreq)
         if (!LoRa.begin(loraFreq))
         {
             Serial.println("fail to initial LoRa");
+            beep(3,100);
             if (_oled)
             {
                 _oled->setCursor(0, 10);
@@ -218,6 +219,7 @@ bool Tenergy32Hub::begin(uint8_t userOptions, uint32_t loraFreq)
         if (!adcInit)
         {
             Serial.println("fail to initialize ADS1115");
+            beep(3,100);
             if (_oled)
             {
                 _oled->setCursor(0, 10);
